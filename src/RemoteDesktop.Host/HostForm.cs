@@ -1,5 +1,6 @@
 using System.Text;
 using RemoteDesktop.Shared.Util;
+using RemoteDesktop.Windows;
 
 namespace RemoteDesktop.Host;
 
@@ -19,6 +20,8 @@ public sealed class HostForm : Form
     private readonly Button _startButton = new();
     private readonly Button _stopButton = new();
 
+    private readonly Button _sendFileButton = new();
+    private readonly ClipboardMonitor _clipboard = new();
     private string _sessionId = "";
     private string _password = "";
     private CancellationTokenSource? _cts;
@@ -56,6 +59,13 @@ public sealed class HostForm : Form
         var regen = new Button { Text = "New credentials" };
         regen.Click += (_, _) => Regenerate();
 
+        _sendFileButton.Text = "Send file…";
+        _sendFileButton.Enabled = false;
+        _sendFileButton.Click += (_, _) => SendFile();
+
+        // Clipboard sync (both directions), on while a session is active.
+        _clipboard.TextCopied += t => _session?.SendClipboardText(t);
+
         layout.Controls.Add(new Label { Text = "Relay address:", Anchor = AnchorStyles.Left, AutoSize = true }, 0, 0);
         layout.Controls.Add(_relayBox, 1, 0);
         layout.Controls.Add(new Label { Text = "Session ID:", Anchor = AnchorStyles.Left, AutoSize = true }, 0, 1);
@@ -67,6 +77,7 @@ public sealed class HostForm : Form
         buttons.Controls.Add(_startButton);
         buttons.Controls.Add(_stopButton);
         buttons.Controls.Add(regen);
+        buttons.Controls.Add(_sendFileButton);
         layout.Controls.Add(new Label(), 0, 3);
         layout.Controls.Add(buttons, 1, 3);
 
@@ -102,6 +113,9 @@ public sealed class HostForm : Form
         _cts = new CancellationTokenSource();
         _session = new HostSession(host, port, _sessionId, _password, ownerTag);
         _session.Status += s => BeginInvoke(() => _statusLabel.Text = s);
+        _session.RemoteClipboardText += t => BeginInvoke(() => _clipboard.SetRemoteText(t));
+        _session.ViewerConnected += () => BeginInvoke(() => _sendFileButton.Enabled = true);
+        _session.ViewerDisconnected += () => BeginInvoke(() => _sendFileButton.Enabled = false);
 
         _ = _session.RunAsync(_cts.Token);
         _startButton.Enabled = false;
@@ -109,11 +123,24 @@ public sealed class HostForm : Form
         _relayBox.Enabled = false;
     }
 
+    private void SendFile()
+    {
+        using var dlg = new OpenFileDialog { Title = "Send file to viewer" };
+        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+        string path = dlg.FileName;
+        _ = Task.Run(async () =>
+        {
+            try { await _session!.SendFileAsync(path, _cts?.Token ?? CancellationToken.None); }
+            catch (Exception ex) { BeginInvoke(() => _statusLabel.Text = $"Send failed: {ex.Message}"); }
+        });
+    }
+
     private void Stop()
     {
         _cts?.Cancel();
         _startButton.Enabled = true;
         _stopButton.Enabled = false;
+        _sendFileButton.Enabled = false;
         _relayBox.Enabled = true;
         _statusLabel.Text = "Stopped.";
     }
@@ -133,6 +160,7 @@ public sealed class HostForm : Form
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
         _cts?.Cancel();
+        _clipboard.Dispose();
         base.OnFormClosing(e);
     }
 }
