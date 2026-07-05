@@ -1,0 +1,21 @@
+#!/bin/sh
+# Runs as root after install. Create the writable var/ dir (PID, log, port config,
+# single-file extract dir) and hand it to the non-root package user so the daemon
+# can write there.
+
+PKG="RemoteDesktopRelay"
+PKGVAR="/var/packages/${PKG}/var"
+
+mkdir -p "${PKGVAR}"
+
+# Default port; the user can change this file and restart the package.
+if [ ! -f "${PKGVAR}/port.conf" ]; then
+    echo "9945" > "${PKGVAR}/port.conf"
+fi
+
+# Chown to the package user (its name matches the package on DSM 7).
+if [ -n "${SYNOPKG_PKGNAME}" ]; then
+    chown -R "${SYNOPKG_PKGNAME}:${SYNOPKG_PKGNAME}" "${PKGVAR}" 2>/dev/null || true
+fi
+
+exit 0

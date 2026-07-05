@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+dist/
+publish/
+artifacts/
+
+# Packaging artifacts — never commit large binaries to the repo
+*.spk
+*.zip
+*.nupkg
+
+# IDE / OS
+.vs/
+.vscode/
+*.user
+*.suo
+.DS_Store
