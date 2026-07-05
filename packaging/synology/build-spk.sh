@@ -28,6 +28,9 @@ dotnet publish "${RELAY_CSPROJ}" -c Release -r linux-x64 --self-contained \
 echo ">> Assembling DSM UI (client download page)"
 cp "${HERE}/ui/config" "${PAYLOAD}/ui/config"
 cp "${HERE}/ui/index.html" "${PAYLOAD}/ui/index.html"
+# The port-config resource worker resolves protocol-file relative to the
+# package target dir, so the firewall .sc must ship inside package.tgz.
+cp "${HERE}/RemoteDesktopRelay.sc" "${PAYLOAD}/ui/RemoteDesktopRelay.sc"
 for s in 24 32 48 64 72; do
     python3 "${HERE}/make-icons.py" "${PAYLOAD}/ui/images/icon_${s}.png" "${s}"
 done
