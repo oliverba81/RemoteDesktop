@@ -1,0 +1,54 @@
+#!/bin/sh
+# DSM 7 service control script for the RemoteDesktop relay.
+# Runs as the non-root package user; PID + log live in the writable package var/.
+
+PKG="RemoteDesktopRelay"
+PKGDIR="/var/packages/${PKG}"
+PKGVAR="${PKGDIR}/var"
+TARGET="${PKGDIR}/target"
+
+BIN="${TARGET}/bin/remotedesktop-relay"
+PIDFILE="${PKGVAR}/relay.pid"
+LOGFILE="${PKGVAR}/relay.log"
+PORTFILE="${PKGVAR}/port.conf"
+
+# Invariant globalization so the self-contained .NET binary starts without libicu.
+export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+export DOTNET_BUNDLE_EXTRACT_BASE_DIR="${PKGVAR}/extract"
+
+if [ -f "${PORTFILE}" ]; then
+    RELAY_PORT="$(cat "${PORTFILE}")"
+else
+    RELAY_PORT=9945
+fi
+export RELAY_PORT
+
+start_daemon() {
+    mkdir -p "${PKGVAR}" "${DOTNET_BUNDLE_EXTRACT_BASE_DIR}"
+    "${BIN}" >> "${LOGFILE}" 2>&1 &
+    echo $! > "${PIDFILE}"
+}
+
+stop_daemon() {
+    if [ -f "${PIDFILE}" ]; then
+        kill "$(cat "${PIDFILE}")" 2>/dev/null
+        rm -f "${PIDFILE}"
+    fi
+}
+
+status_daemon() {
+    # LSB: 0 = running, 3 = stopped. DSM reads this to show Running/Stopped.
+    if [ -f "${PIDFILE}" ] && kill -0 "$(cat "${PIDFILE}")" 2>/dev/null; then
+        return 0
+    fi
+    return 3
+}
+
+case "$1" in
+    start)   start_daemon; exit 0 ;;
+    stop)    stop_daemon;  exit 0 ;;
+    restart) stop_daemon; sleep 1; start_daemon; exit 0 ;;
+    status)  status_daemon; exit $? ;;
+    killall) stop_daemon; exit 0 ;;
+    *)       echo "usage: $0 {start|stop|restart|status}"; exit 1 ;;
+esac

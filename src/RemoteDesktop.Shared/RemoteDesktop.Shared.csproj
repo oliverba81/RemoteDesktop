@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- This library is shared by the cross-platform relay and must stay GDI-free.
+         Flag any accidental use of Windows-only System.Drawing APIs as an error. -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
+    <!-- Pure-managed Argon2id: works on Windows clients AND on the Synology relay
+         (no native libsodium dependency to fail loading on minimal DSM userland). -->
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+  </ItemGroup>
+
+</Project>

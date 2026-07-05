@@ -1,0 +1,4 @@
+#!/bin/sh
+# Runs as root before uninstall. Nothing to clean beyond the service (DSM stops it
+# via start-stop-status stop first).
+exit 0

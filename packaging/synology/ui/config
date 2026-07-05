@@ -1,0 +1,12 @@
+{
+    ".url": {
+        "SYNO.SDS.RemoteDesktop": {
+            "type": "url",
+            "allUsers": true,
+            "title": "RemoteDesktop",
+            "desc": "Download the Windows Host and Viewer clients",
+            "icon": "images/icon_{0}.png",
+            "url": "/webman/3rdparty/RemoteDesktopRelay/index.html"
+        }
+    }
+}

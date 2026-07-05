@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Allows building the net8.0-windows WinForms projects on Linux (CI / Claude Code web). -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- WinForms is reflection heavy and System.Text.Json uses reflection: never trim. -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
