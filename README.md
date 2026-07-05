@@ -58,9 +58,12 @@ und für den Relay nicht lesbar.
 
 ## Funktionsumfang
 
-**v1 (dieser Stand):** Bildschirmübertragung (JPEG-Kachel-Diff, adaptiv),
+**v1 + v1.1 (dieser Stand):** Bildschirmübertragung (JPEG-Kachel-Diff, adaptiv),
 Maus-/Tastatursteuerung, Relay als Synology-Paket, Viewer-Adressbuch mit
-Online-Anzeige, DPAPI-gespeicherte Passwörter.
+Online-Anzeige, DPAPI-gespeicherte Passwörter, **geteilte Zwischenablage (Text,
+beide Richtungen, mit Passwort-Leak-Schutz)** und **Dateiübertragung (beide
+Richtungen, SHA-256-verifiziert, `.part`+atomarer Rename, Annahme-Dialog im
+Viewer / Auto-Annahme in Downloads am Host)**.
 
 **v1-Grenzen (dokumentiert):** nur **primärer Monitor**; UAC-erhöhte Fenster
 empfangen keine Eingaben; `Strg+Alt+Entf` nicht injizierbar; `Win`/`Alt+Tab`
@@ -68,8 +71,8 @@ werden lokal abgefangen (noch kein Low-Level-Hook); Cursor als Position
 übertragen (Form vereinfacht); Bandbreite 0,3–1,5 Mbit/s gilt für ruhenden
 Desktop, bei Video/Scrollen deutlich mehr.
 
-**Roadmap v1.1:** Reconnect-UX, Zwischenablage, Dateiübertragung (Protokoll ist
-vorbereitet), unbeaufsichtigter Zugriff, echtes PAKE, DXGI-Capture, Multi-Monitor.
+**Roadmap:** Reconnect-UX, unbeaufsichtigter Zugriff, echtes PAKE (CPace),
+DXGI-Capture, Multi-Monitor, Datei-Resume-UI.
 
 ## Bauen & Testen
 

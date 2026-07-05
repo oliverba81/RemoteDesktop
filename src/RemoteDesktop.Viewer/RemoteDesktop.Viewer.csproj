@@ -18,4 +18,9 @@
     <ProjectReference Include="..\RemoteDesktop.Shared\RemoteDesktop.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Shared WinForms helper (kept out of the cross-platform Shared library). -->
+    <Compile Include="..\..\build\shared-windows\ClipboardMonitor.cs" Link="Windows\ClipboardMonitor.cs" />
+  </ItemGroup>
+
 </Project>

@@ -1,4 +1,5 @@
 using RemoteDesktop.Shared.Protocol;
+using RemoteDesktop.Windows;
 
 namespace RemoteDesktop.Viewer;
 
@@ -19,6 +20,8 @@ public sealed class ViewerForm : Form
     private readonly ViewerSession _session;
     private readonly CancellationTokenSource _cts = new();
     private readonly HashSet<Keys> _vkDown = new();
+    private readonly ClipboardMonitor _clipboard = new();
+    private readonly ToolStripButton _sendFile = new("Send file…");
 
     public ViewerForm(string relayHost, int relayPort, string sessionId, string password)
     {
@@ -31,8 +34,13 @@ public sealed class ViewerForm : Form
         _screen.Dock = DockStyle.Fill;
         _session = new ViewerSession(relayHost, relayPort, sessionId, password, _screen);
         _session.Status += s => TryUi(() => _status.Text = s);
-        _session.Connected += size => TryUi(() => _screen.ResetRemote(size));
+        _session.Connected += size => TryUi(() => { _screen.ResetRemote(size); _sendFile.Enabled = true; });
         _session.Disconnected += () => TryUi(Close);
+        _session.RemoteClipboardText += t => TryUi(() => _clipboard.SetRemoteText(t));
+        _session.FileProgress += (name, done, total, incoming) => TryUi(() =>
+            _status.Text = $"{(incoming ? "Receiving" : "Sending")} {name} — {done * 100 / Math.Max(1, total)}%");
+        _session.AcceptFile = AcceptFileAsync;
+        _clipboard.TextCopied += t => _session.SendClipboardText(t);
 
         var toolbar = new ToolStrip();
         var quality = new ToolStripComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
@@ -41,7 +49,11 @@ public sealed class ViewerForm : Form
         quality.SelectedIndexChanged += (_, _) => _session.SetQuality((QualityLevel)quality.SelectedIndex);
         var disconnect = new ToolStripButton("Disconnect");
         disconnect.Click += (_, _) => Close();
+        _sendFile.Enabled = false;
+        _sendFile.Click += (_, _) => SendFile();
         toolbar.Items.Add(disconnect);
+        toolbar.Items.Add(new ToolStripSeparator());
+        toolbar.Items.Add(_sendFile);
         toolbar.Items.Add(new ToolStripSeparator());
         toolbar.Items.Add(quality);
 
@@ -77,6 +89,34 @@ public sealed class ViewerForm : Form
     {
         if (!IsHandleCreated) return;
         try { BeginInvoke(action); } catch (InvalidOperationException) { /* closing */ }
+    }
+
+    private void SendFile()
+    {
+        using var dlg = new OpenFileDialog { Title = "Send file to host" };
+        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+        string path = dlg.FileName;
+        _ = Task.Run(async () =>
+        {
+            try { await _session.SendFileAsync(path, _cts.Token); }
+            catch (Exception ex) { TryUi(() => _status.Text = $"Send failed: {ex.Message}"); }
+        });
+    }
+
+    /// <summary>Prompts the user (on the UI thread) to accept an incoming file.</summary>
+    private Task<bool> AcceptFileAsync(FileOfferPayload offer)
+    {
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!IsHandleCreated) { tcs.SetResult(false); return tcs.Task; }
+        BeginInvoke(() =>
+        {
+            string sizeMb = (offer.Size / 1024.0 / 1024.0).ToString("0.0");
+            DialogResult r = MessageBox.Show(this,
+                $"The host wants to send \"{offer.FileName}\" ({sizeMb} MB).\nSave to your Downloads folder?",
+                "Incoming file", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            tcs.SetResult(r == DialogResult.Yes);
+        });
+        return tcs.Task;
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -125,6 +165,7 @@ public sealed class ViewerForm : Form
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
         _cts.Cancel();
+        _clipboard.Dispose();
         _ = _session.DisposeAsync();
         base.OnFormClosing(e);
     }

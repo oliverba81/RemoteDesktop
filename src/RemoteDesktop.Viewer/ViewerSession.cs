@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using RemoteDesktop.Shared.Crypto;
 using RemoteDesktop.Shared.Protocol;
+using RemoteDesktop.Shared.Transfer;
 using RemoteDesktop.Shared.Transport;
 
 namespace RemoteDesktop.Viewer;
@@ -20,6 +21,14 @@ public sealed class ViewerSession : IAsyncDisposable
 
     private FramedConnection? _conn;
     private SendScheduler? _scheduler;
+    private FileTransferService? _files;
+
+    /// <summary>Where accepted files are written. Defaults to the user's Downloads.</summary>
+    public string DownloadDirectory { get; set; } =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+
+    /// <summary>Asked before accepting an incoming file. Set by the UI.</summary>
+    public Func<FileOfferPayload, Task<bool>> AcceptFile { get; set; } = _ => Task.FromResult(false);
 
     public ViewerSession(string relayHost, int relayPort, string sessionId, string password, RemoteScreenControl screen)
     {
@@ -34,6 +43,9 @@ public sealed class ViewerSession : IAsyncDisposable
     public event Action<string>? Status;
     public event Action<PixelSize>? Connected;
     public event Action? Disconnected;
+    public event Action<string>? RemoteClipboardText;
+    /// <summary>(fileName, bytesDone, bytesTotal, incoming?)</summary>
+    public event Action<string, long, long, bool>? FileProgress;
 
     public async Task RunAsync(CancellationToken ct)
     {
@@ -64,6 +76,11 @@ public sealed class ViewerSession : IAsyncDisposable
         var scheduler = new SendScheduler(conn);
         _scheduler = scheduler;
 
+        _files = new FileTransferService(scheduler, DownloadDirectory, AcceptFile);
+        _files.Progress += (_, name, done, total, incoming) => FileProgress?.Invoke(name, done, total, incoming);
+        _files.Completed += (_, path) => Status?.Invoke($"File saved: {Path.GetFileName(path)}");
+        _files.Failed += (_, reason) => Status?.Invoke($"File transfer failed: {reason}");
+
         Task heartbeat = HeartbeatLoopAsync(scheduler, ct);
         try
         {
@@ -72,6 +89,7 @@ public sealed class ViewerSession : IAsyncDisposable
         finally
         {
             SendInputReset();
+            _files = null;
             await scheduler.DisposeAsync().ConfigureAwait(false);
             try { await heartbeat.ConfigureAwait(false); } catch { /* ignore */ }
             Disconnected?.Invoke();
@@ -94,6 +112,17 @@ public sealed class ViewerSession : IAsyncDisposable
                     break;
                 case MessageType.CursorUpdate:
                     _screen.ApplyCursor(CursorUpdatePayload.Parse(f.Value.Payload));
+                    break;
+                case MessageType.ClipboardText:
+                    RemoteClipboardText?.Invoke(ClipboardTextPayload.Parse(f.Value.Payload).Text);
+                    break;
+                case MessageType.FileOffer:
+                case MessageType.FileAccept:
+                case MessageType.FileReject:
+                case MessageType.FileChunk:
+                case MessageType.FileDone:
+                case MessageType.FileError:
+                    if (_files is not null) await _files.HandleFrameAsync(f.Value).ConfigureAwait(false);
                     break;
                 case MessageType.Heartbeat:
                     break;
@@ -134,6 +163,12 @@ public sealed class ViewerSession : IAsyncDisposable
 
     public void SetQuality(QualityLevel level) =>
         _scheduler?.EnqueueHigh(MessageType.QualityChange, new QualityChangePayload(level).Serialize());
+
+    public void SendClipboardText(string text) =>
+        _scheduler?.EnqueueHigh(MessageType.ClipboardText, new ClipboardTextPayload(text).Serialize());
+
+    public Task SendFileAsync(string path, CancellationToken ct) =>
+        _files?.SendFileAsync(path, ct) ?? Task.CompletedTask;
 
     public async ValueTask DisposeAsync()
     {

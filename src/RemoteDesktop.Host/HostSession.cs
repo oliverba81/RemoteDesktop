@@ -4,6 +4,7 @@ using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Input;
 using RemoteDesktop.Shared.Crypto;
 using RemoteDesktop.Shared.Protocol;
+using RemoteDesktop.Shared.Transfer;
 using RemoteDesktop.Shared.Transport;
 
 namespace RemoteDesktop.Host;
@@ -23,6 +24,8 @@ public sealed class HostSession : IAsyncDisposable
     private readonly InputInjector _injector = new();
     private readonly SemaphoreSlim _ackSlots = new(2, 2);
     private volatile QualityLevel _quality = QualityLevel.Medium;
+    private SendScheduler? _scheduler;
+    private FileTransferService? _files;
 
     public HostSession(string relayHost, int relayPort, string sessionId, string password, byte[] ownerTag)
     {
@@ -36,6 +39,17 @@ public sealed class HostSession : IAsyncDisposable
     public event Action<string>? Status;
     public event Action? ViewerConnected;
     public event Action? ViewerDisconnected;
+
+    /// <summary>Raised when the peer sends clipboard text to set locally.</summary>
+    public event Action<string>? RemoteClipboardText;
+
+    /// <summary>Queues local clipboard text for the peer (no-op when unpaired).</summary>
+    public void SendClipboardText(string text) =>
+        _scheduler?.EnqueueHigh(MessageType.ClipboardText, new ClipboardTextPayload(text).Serialize());
+
+    /// <summary>Sends a local file to the connected viewer.</summary>
+    public Task SendFileAsync(string path, CancellationToken ct) =>
+        _files?.SendFileAsync(path, ct) ?? Task.CompletedTask;
 
     public async Task RunAsync(CancellationToken ct)
     {
@@ -92,6 +106,14 @@ public sealed class HostSession : IAsyncDisposable
         ViewerConnected?.Invoke();
 
         await using var scheduler = new SendScheduler(conn);
+        _scheduler = scheduler;
+        // The host auto-accepts incoming files into its Downloads folder.
+        string downloads = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        _files = new FileTransferService(scheduler, downloads, _ => Task.FromResult(true));
+        _files.Completed += (_, path) => Status?.Invoke($"File received: {Path.GetFileName(path)}");
+        _files.Failed += (_, reason) => Status?.Invoke($"File transfer failed: {reason}");
+
         using var sessionCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         Task capture = Task.Run(() => CaptureLoopAsync(capturer, scheduler, sessionCts.Token), sessionCts.Token);
@@ -104,6 +126,8 @@ public sealed class HostSession : IAsyncDisposable
         finally
         {
             sessionCts.Cancel();
+            _scheduler = null;
+            _files = null;
             _injector.ReleaseAllModifiers();
             try { await capture.ConfigureAwait(false); } catch { /* ignore */ }
             try { await heartbeat.ConfigureAwait(false); } catch { /* ignore */ }
@@ -180,6 +204,17 @@ public sealed class HostSession : IAsyncDisposable
                     break;
                 case MessageType.QualityChange:
                     _quality = QualityChangePayload.Parse(f.Value.Payload).Level;
+                    break;
+                case MessageType.ClipboardText:
+                    RemoteClipboardText?.Invoke(ClipboardTextPayload.Parse(f.Value.Payload).Text);
+                    break;
+                case MessageType.FileOffer:
+                case MessageType.FileAccept:
+                case MessageType.FileReject:
+                case MessageType.FileChunk:
+                case MessageType.FileDone:
+                case MessageType.FileError:
+                    if (_files is not null) await _files.HandleFrameAsync(f.Value).ConfigureAwait(false);
                     break;
                 case MessageType.Heartbeat:
                     break;
