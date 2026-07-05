@@ -33,7 +33,7 @@ for s in 24 32 48 64 72; do
 done
 
 echo ">> Building package.tgz (extracted to target/ on the NAS)"
-tar -C "${PAYLOAD}" -czf "${STAGE}/package.tgz" bin ui
+tar --format=gnu --owner=root --group=root -C "${PAYLOAD}" -czf "${STAGE}/package.tgz" bin ui
 
 echo ">> Package icons"
 python3 "${HERE}/make-icons.py" "${STAGE}/PACKAGE_ICON.PNG" 72
@@ -41,6 +41,11 @@ python3 "${HERE}/make-icons.py" "${STAGE}/PACKAGE_ICON_256.PNG" 256
 
 echo ">> INFO"
 sed "s/@VERSION@/${VERSION}/" "${HERE}/INFO.in" > "${STAGE}/INFO"
+# Fields the DSM package validator expects, computed at pack time (same as the
+# official pkgscripts-ng toolkit and SynoCommunity's spksrc do).
+echo "checksum=\"$(md5sum "${STAGE}/package.tgz" | cut -d' ' -f1)\"" >> "${STAGE}/INFO"
+echo "extractsize=\"$(du -sk "${PAYLOAD}" | cut -f1)\"" >> "${STAGE}/INFO"
+echo "create_time=\"$(date +%Y%m%d-%H:%M:%S)\"" >> "${STAGE}/INFO"
 
 echo ">> scripts + conf"
 cp -r "${HERE}/scripts" "${STAGE}/scripts"
@@ -49,7 +54,8 @@ chmod 755 "${STAGE}/scripts/"*
 
 echo ">> Assembling .spk (INFO must be the first archive entry)"
 OUT="${DIST}/RemoteDesktopRelay-x86_64-${VERSION}.spk"
-( cd "${STAGE}" && tar -cf "${OUT}" INFO package.tgz scripts conf PACKAGE_ICON.PNG PACKAGE_ICON_256.PNG )
+( cd "${STAGE}" && tar --format=gnu --owner=root --group=root -cf "${OUT}" \
+    INFO package.tgz scripts conf PACKAGE_ICON.PNG PACKAGE_ICON_256.PNG )
 
 echo ">> Done: ${OUT}"
 echo ">> Contents:"

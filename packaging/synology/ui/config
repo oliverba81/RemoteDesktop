@@ -1,6 +1,6 @@
 {
     ".url": {
-        "SYNO.SDS.RemoteDesktop": {
+        "com.remotedesktop.relay": {
             "type": "url",
             "allUsers": true,
             "title": "RemoteDesktop",

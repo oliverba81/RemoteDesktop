@@ -1,0 +1,3 @@
+#!/bin/sh
+# Required by the DSM package format; nothing to do at this stage.
+exit 0
