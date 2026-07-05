@@ -1,0 +1,8 @@
+# Registers the relay port with the DSM firewall and router-configuration UI, so
+# the port can be opened there. Without this, the DSM firewall blocks the relay
+# even when the router forwards the port. Keep in sync with var/port.conf.
+[RemoteDesktopRelay]
+title="RemoteDesktop Relay"
+desc="RemoteDesktop relay TCP listener"
+port_forward="yes"
+dst.ports="9945/tcp"

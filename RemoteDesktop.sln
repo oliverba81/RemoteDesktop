@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6948EE8F-1C4E-44E1-9631-B254C434A95E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteDesktop.Shared", "src\RemoteDesktop.Shared\RemoteDesktop.Shared.csproj", "{DD372432-23C4-4B01-993C-4D1B5CD14D80}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F2DFD015-062B-4FC4-9E39-7130CBBCD8D5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteDesktop.Shared.Tests", "tests\RemoteDesktop.Shared.Tests\RemoteDesktop.Shared.Tests.csproj", "{8275C7CB-2FEE-46A3-8654-B5700B57C376}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteDesktop.Relay", "src\RemoteDesktop.Relay\RemoteDesktop.Relay.csproj", "{9FFECD42-7EC7-46AD-AD53-290C597CD932}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteDesktop.Host", "src\RemoteDesktop.Host\RemoteDesktop.Host.csproj", "{A1B2C3D4-1111-4A01-9001-000000000001}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteDesktop.Viewer", "src\RemoteDesktop.Viewer\RemoteDesktop.Viewer.csproj", "{A1B2C3D4-2222-4A01-9002-000000000002}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DD372432-23C4-4B01-993C-4D1B5CD14D80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD372432-23C4-4B01-993C-4D1B5CD14D80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD372432-23C4-4B01-993C-4D1B5CD14D80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD372432-23C4-4B01-993C-4D1B5CD14D80}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8275C7CB-2FEE-46A3-8654-B5700B57C376}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8275C7CB-2FEE-46A3-8654-B5700B57C376}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8275C7CB-2FEE-46A3-8654-B5700B57C376}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8275C7CB-2FEE-46A3-8654-B5700B57C376}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FFECD42-7EC7-46AD-AD53-290C597CD932}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FFECD42-7EC7-46AD-AD53-290C597CD932}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FFECD42-7EC7-46AD-AD53-290C597CD932}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FFECD42-7EC7-46AD-AD53-290C597CD932}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-1111-4A01-9001-000000000001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-1111-4A01-9001-000000000001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-1111-4A01-9001-000000000001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-1111-4A01-9001-000000000001}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-2222-4A01-9002-000000000002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-2222-4A01-9002-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-2222-4A01-9002-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-2222-4A01-9002-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DD372432-23C4-4B01-993C-4D1B5CD14D80} = {6948EE8F-1C4E-44E1-9631-B254C434A95E}
+		{8275C7CB-2FEE-46A3-8654-B5700B57C376} = {F2DFD015-062B-4FC4-9E39-7130CBBCD8D5}
+		{9FFECD42-7EC7-46AD-AD53-290C597CD932} = {6948EE8F-1C4E-44E1-9631-B254C434A95E}
+		{A1B2C3D4-1111-4A01-9001-000000000001} = {6948EE8F-1C4E-44E1-9631-B254C434A95E}
+		{A1B2C3D4-2222-4A01-9002-000000000002} = {6948EE8F-1C4E-44E1-9631-B254C434A95E}
+	EndGlobalSection
+EndGlobal
