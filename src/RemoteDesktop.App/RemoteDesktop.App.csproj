@@ -5,8 +5,8 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>..\..\build\app.manifest</ApplicationManifest>
-    <AssemblyName>RemoteDesktopViewer</AssemblyName>
-    <RootNamespace>RemoteDesktop.Viewer</RootNamespace>
+    <AssemblyName>RemoteDesktop</AssemblyName>
+    <RootNamespace>RemoteDesktop.App</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

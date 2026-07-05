@@ -15,23 +15,20 @@
 </head>
 <body>
   <h1>RemoteDesktop</h1>
-  <p>The relay is installed on this NAS. Install the Windows clients on the PCs you
-     want to control and control from.</p>
+  <p>The relay is installed on this NAS. Install the Windows app on every PC
+     involved — when it starts, you choose whether that machine is shared (Host)
+     or controls another one (Viewer).</p>
 
   <div class="card">
-    <h2>Host (the PC you want to control)</h2>
-    <p>Run this on the machine that should be remote-controlled. It shows a session
-       ID and password to hand to the viewer.</p>
-    <!-- Replace with the GitHub Releases URL of your build. Hosting the clients on
+    <h2>RemoteDesktop app (Windows)</h2>
+    <p>One program for both roles. On the PC to be controlled pick
+       <strong>Share this PC (Host)</strong> — it shows a session ID and password.
+       On the PC you sit at pick <strong>Control another PC (Viewer)</strong> and
+       enter those credentials or use the address book. Shortcuts can skip the
+       chooser with <code>--host</code> or <code>--viewer</code>.</p>
+    <!-- Replace with the GitHub Releases URL of your build. Hosting the client on
          Releases keeps the .spk small and decouples client updates from the NAS. -->
-    <a class="btn" href="https://github.com/oliverba81/remotedesktop/releases/latest">Download Host (Windows)</a>
-  </div>
-
-  <div class="card">
-    <h2>Viewer (the PC you control from)</h2>
-    <p>Run this on the machine you sit at. Enter the relay address, session ID and
-       password, or save targets in the address book.</p>
-    <a class="btn" href="https://github.com/oliverba81/remotedesktop/releases/latest">Download Viewer (Windows)</a>
+    <a class="btn" href="https://github.com/oliverba81/remotedesktop/releases/latest">Download RemoteDesktop (Windows)</a>
   </div>
 
   <div class="card">

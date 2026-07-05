@@ -31,8 +31,7 @@ und für den Relay nicht lesbar.
 |---|---|---|
 | `RemoteDesktop.Shared` | `net8.0` | Protokoll, Framing, Krypto, Imaging-Algorithmen (GDI-frei, unit-getestet) |
 | `RemoteDesktop.Relay` | `net8.0` | Rendezvous-Relay (plattformunabhängig, läuft auf der NAS) |
-| `RemoteDesktop.Host` | `net8.0-windows` | Gesteuerter PC: Bildschirmaufnahme + Eingabe-Injektion |
-| `RemoteDesktop.Viewer` | `net8.0-windows` | Steuernder PC: Anzeige + Eingabe + Adressbuch |
+| `RemoteDesktop.App` | `net8.0-windows` | Windows-App mit Rollenauswahl: Host (Bildschirmaufnahme + Eingabe-Injektion) und Viewer (Anzeige + Eingabe + Adressbuch) in einer EXE |
 
 ## Sicherheitsmodell
 
@@ -88,11 +87,10 @@ Die WinForms-Clients (`net8.0-windows`) benötigen zum Bauen das offizielle .NET
 SDK (mit Windows-Desktop-Targeting) — auf Linux via `EnableWindowsTargeting`
 (bereits in `Directory.Build.props`), zur Laufzeit Windows. CI baut alles.
 
-Windows-Clients erzeugen:
+Windows-App erzeugen:
 
 ```bash
-dotnet publish src/RemoteDesktop.Host   -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
-dotnet publish src/RemoteDesktop.Viewer -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+dotnet publish src/RemoteDesktop.App -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
 ```
 
 ## Relay auf der Synology installieren
@@ -119,11 +117,15 @@ und das Paket neu starten.
 
 ## Verwenden
 
-1. **Host** (`RemoteDesktopHost.exe`) auf dem zu steuernden PC starten,
-   Relay-Adresse `name.synology.me:9945` eintragen, *Start session* — er zeigt
-   **Session-ID** und **Passwort**.
-2. **Viewer** (`RemoteDesktopViewer.exe`) auf dem steuernden PC: Relay-Adresse,
-   Session-ID und Passwort eingeben (oder im Adressbuch speichern) → *Connect*.
+1. `RemoteDesktop.exe` auf dem zu steuernden PC starten und **Share this PC
+   (Host)** wählen, Relay-Adresse `name.synology.me:9945` eintragen, *Start
+   session* — er zeigt **Session-ID** und **Passwort**.
+2. `RemoteDesktop.exe` auf dem steuernden PC starten und **Control another PC
+   (Viewer)** wählen: Relay-Adresse, Session-ID und Passwort eingeben (oder im
+   Adressbuch speichern) → *Connect*.
+
+Verknüpfungen können die Auswahl mit `RemoteDesktop.exe --host` bzw.
+`--viewer` überspringen.
 
 ## Lizenz / Hinweis
 
