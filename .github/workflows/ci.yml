@@ -37,8 +37,9 @@ jobs:
             --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
             -o dist/clients/viewer
 
+      # DSM expects a numeric revision after the dash (e.g. 1.0.0-0006).
       - name: Build Synology .spk
-        run: bash packaging/synology/build-spk.sh 1.0.0-ci${{ github.run_number }}
+        run: bash packaging/synology/build-spk.sh "1.0.0-$(printf '%04d' ${{ github.run_number }})"
 
       - name: Upload relay .spk
         uses: actions/upload-artifact@v4
