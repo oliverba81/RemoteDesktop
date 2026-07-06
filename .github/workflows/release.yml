@@ -29,8 +29,10 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # VERSION is the DSM package version (x.y.z-rev); TAG is the vX.Y.Z release
-      # tag. On a tag push both come from the tag; on manual dispatch from the input.
+      # REL_VERSION is the DSM package version (x.y.z-rev); REL_TAG is the vX.Y.Z
+      # release tag. NOT named VERSION/TAG: MSBuild treats a "Version" environment
+      # variable as the Version property (case-insensitively), which poisons every
+      # dotnet command with an invalid assembly version.
       - name: Compute version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -39,17 +41,17 @@ jobs:
             RAW="${GITHUB_REF_NAME}"
           fi
           RAW="${RAW#v}"
-          VERSION="$RAW"
-          [[ "$VERSION" == *-* ]] || VERSION="$VERSION-0001"
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "TAG=v${RAW%%-*}" >> "$GITHUB_ENV"
+          REL_VERSION="$RAW"
+          [[ "$REL_VERSION" == *-* ]] || REL_VERSION="$REL_VERSION-0001"
+          echo "REL_VERSION=$REL_VERSION" >> "$GITHUB_ENV"
+          echo "REL_TAG=v${RAW%%-*}" >> "$GITHUB_ENV"
 
       - name: Test (Shared + Relay)
         run: dotnet test tests/RemoteDesktop.Shared.Tests/RemoteDesktop.Shared.Tests.csproj -c Release
 
       - name: Publish Windows app (win-x64, self-contained)
         run: |
-          VNUM="${VERSION%%-*}"
+          VNUM="${REL_VERSION%%-*}"
           dotnet publish src/RemoteDesktop.App/RemoteDesktop.App.csproj -c Release -r win-x64 \
             --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
             -p:Version="$VNUM" \
@@ -57,15 +59,15 @@ jobs:
           (cd dist/clients/app && zip -r ../../RemoteDesktop-win-x64.zip .)
 
       - name: Build Synology .spk
-        run: bash packaging/synology/build-spk.sh "$VERSION"
+        run: bash packaging/synology/build-spk.sh "$REL_VERSION"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           # Explicit tag so a manual dispatch (which has no triggering tag) still
           # creates the vX.Y.Z tag and release.
-          tag_name: ${{ env.TAG }}
-          name: ${{ env.TAG }}
+          tag_name: ${{ env.REL_TAG }}
+          name: ${{ env.REL_TAG }}
           generate_release_notes: true
           files: |
             dist/RemoteDesktop-win-x64.zip
