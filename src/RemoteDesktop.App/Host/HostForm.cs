@@ -46,7 +46,9 @@ public sealed class HostForm : Form
         _relayBox.PlaceholderText = "name.synology.me (port optional, default 9945)";
 
         _sessionIdLabel.Font = new Font(FontFamily.GenericMonospace, 16, FontStyle.Bold);
+        _sessionIdLabel.AutoSize = true;
         _passwordLabel.Font = new Font(FontFamily.GenericMonospace, 16, FontStyle.Bold);
+        _passwordLabel.AutoSize = true;
         _statusLabel.AutoSize = true;
         _statusLabel.Text = "Idle.";
 
