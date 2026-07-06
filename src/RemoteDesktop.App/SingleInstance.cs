@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using RemoteDesktop.Host;
 
 namespace RemoteDesktop.App;
 
@@ -42,6 +43,12 @@ internal static class SingleInstance
         {
             void Bring()
             {
+                // The host may be serving from the tray — restore it fully.
+                if (form is HostForm host)
+                {
+                    host.RestoreFromTrayPublic();
+                    return;
+                }
                 if (!form.Visible) form.Show();
                 if (form.WindowState == FormWindowState.Minimized)
                     form.WindowState = FormWindowState.Normal;
