@@ -92,6 +92,15 @@ Prozessende und startet neu. Voraussetzung: ein veröffentlichtes Release
 **Roadmap:** echtes PAKE (CPace), DXGI-Capture, Windows-Dienst am Host
 (UAC/Strg+Alt+Entf), Datei-Resume-UI.
 
+## Release erstellen
+
+Version in der Datei `VERSION` (Repo-Wurzel) erhöhen und `<Version>` in
+`src/RemoteDesktop.App/RemoteDesktop.App.csproj` gleich mitziehen. Sobald der
+PR auf `main` gemergt ist, baut der Release-Workflow automatisch die
+Windows-App + `.spk`, legt den Tag `v<VERSION>` an und veröffentlicht das
+Release — kein manueller Tag nötig. (Notfalls manuell über Actions →
+Release → Run workflow auslösbar.)
+
 ## Bauen & Testen
 
 Voraussetzung: .NET 8 SDK. Der testbare, plattformunabhängige Kern (Shared +
