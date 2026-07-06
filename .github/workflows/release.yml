@@ -34,8 +34,10 @@ jobs:
 
       - name: Publish Windows app (win-x64, self-contained)
         run: |
+          VNUM="${VERSION%%-*}"
           dotnet publish src/RemoteDesktop.App/RemoteDesktop.App.csproj -c Release -r win-x64 \
             --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:Version="$VNUM" \
             -o dist/clients/app
           (cd dist/clients/app && zip -r ../../RemoteDesktop-win-x64.zip .)
 

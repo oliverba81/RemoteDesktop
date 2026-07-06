@@ -83,6 +83,12 @@ Passphrase werden clientseitig Profil-ID, Auth-Schlüssel und AES-Schlüssel
 abgeleitet (Argon2id→HKDF); die NAS speichert nur einen für sie unlesbaren
 Blob unter `var/profiles/` und kennt weder Passphrase noch Inhalt.
 
+**Auto-Update:** Die Windows-App prüft beim Start (und per „Check for updates"
+im Startfenster) das neueste GitHub-Release; ist es neuer, lädt sie das
+`win-x64`-Zip, tauscht die Installation über ein Updater-Skript nach
+Prozessende und startet neu. Voraussetzung: ein veröffentlichtes Release
+(`git tag v1.3.0 && git push --tags`).
+
 **Roadmap:** echtes PAKE (CPace), DXGI-Capture, Windows-Dienst am Host
 (UAC/Strg+Alt+Entf), Datei-Resume-UI.
 

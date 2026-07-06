@@ -1,4 +1,5 @@
 using RemoteDesktop.App.Ui;
+using RemoteDesktop.App.Update;
 
 namespace RemoteDesktop.App;
 
@@ -64,6 +65,74 @@ internal sealed class LauncherForm : Form
             Location = new Point(30, 322),
         };
         Controls.Add(hint);
+
+        var version = new Label
+        {
+            Text = $"v{UpdateService.CurrentVersion.ToString(3)}",
+            ForeColor = Theme.TextMuted,
+            AutoSize = true,
+            Location = new Point(520, 24),
+        };
+        Controls.Add(version);
+
+        var check = new LinkLabel
+        {
+            Text = "Check for updates",
+            AutoSize = true,
+            Location = new Point(470, 322),
+            LinkColor = Theme.Accent,
+            ActiveLinkColor = Theme.AccentHover,
+        };
+        check.LinkClicked += (_, _) => _ = CheckForUpdatesAsync(interactive: true);
+        Controls.Add(check);
+
+        Shown += (_, _) => _ = CheckForUpdatesAsync(interactive: false);
+    }
+
+    /// <summary>
+    /// Checks GitHub for a newer release. On start-up (interactive: false) it stays
+    /// silent unless an update exists; from the link it also reports "up to date"
+    /// and any error.
+    /// </summary>
+    private async Task CheckForUpdatesAsync(bool interactive)
+    {
+        UpdateService.UpdateInfo? update;
+        try
+        {
+            update = await UpdateService.CheckAsync();
+        }
+        catch (Exception ex)
+        {
+            if (interactive)
+                MessageBox.Show(this, $"Could not check for updates:\n{ex.Message}", "RemoteDesktop");
+            return;
+        }
+
+        if (update is null)
+        {
+            if (interactive)
+                MessageBox.Show(this, "You are running the latest version.", "RemoteDesktop");
+            return;
+        }
+
+        string notes = update.Notes.Length > 600 ? update.Notes[..600] + "…" : update.Notes;
+        DialogResult r = MessageBox.Show(this,
+            $"Version {update.Version.ToString(3)} is available (you have {UpdateService.CurrentVersion.ToString(3)}).\n\n" +
+            $"{notes}\n\nDownload and install now? The app will restart.",
+            "Update available", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+        if (r != DialogResult.Yes) return;
+
+        try
+        {
+            if (await UpdateService.DownloadAndApplyAsync(update))
+                Application.Exit(); // updater swaps the files and relaunches
+            else
+                MessageBox.Show(this, "The update could not be downloaded.", "RemoteDesktop");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"Update failed:\n{ex.Message}", "RemoteDesktop");
+        }
     }
 
     private Panel MakeCard(Point location, string glyph, string heading, string tag,
