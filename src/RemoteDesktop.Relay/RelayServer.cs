@@ -18,12 +18,15 @@ public sealed class RelayServer
     private readonly RelayOptions _opts;
     private readonly IpThrottle _throttle;
     private readonly ConcurrentDictionary<string, Session> _sessions = new(StringComparer.Ordinal);
+    private readonly ProfileStore? _profiles;
     private TcpListener? _listener;
 
     public RelayServer(RelayOptions opts)
     {
         _opts = opts;
         _throttle = new IpThrottle(opts);
+        if (opts.ProfileDir is not null)
+            _profiles = new ProfileStore(opts.ProfileDir, opts.MaxProfileBytes);
     }
 
     /// <summary>The port actually bound (useful when Port was 0 in tests).</summary>
@@ -71,6 +74,14 @@ public sealed class RelayServer
                     break;
                 case MessageType.QueryStatus:
                     await HandleQueryAsync(QueryStatusPayload.Parse(first.Value.Payload), conn, ip, ct);
+                    conn.Dispose(); client.Close();
+                    break;
+                case MessageType.ProfilePut:
+                    await HandleProfilePutAsync(ProfilePutPayload.Parse(first.Value.Payload), conn, ip, ct);
+                    conn.Dispose(); client.Close();
+                    break;
+                case MessageType.ProfileGet:
+                    await HandleProfileGetAsync(ProfileGetPayload.Parse(first.Value.Payload), conn, ip, ct);
                     conn.Dispose(); client.Close();
                     break;
                 default:
@@ -237,6 +248,70 @@ public sealed class RelayServer
             _sessions.TryRemove(new KeyValuePair<string, Session>(p.SessionId, session));
             lock (session.Lock) { session.TeardownViewer(); session.TeardownHost(); }
             Log($"Session {Mask(p.SessionId)} ended");
+        }
+    }
+
+    private async Task HandleProfilePutAsync(
+        ProfilePutPayload p, FramedConnection conn, string ip, CancellationToken ct)
+    {
+        if (_profiles is null)
+        {
+            await SendErrorAsync(conn, SessionErrorCode.ProfileDisabled, "Profile sync is disabled.", ct);
+            return;
+        }
+        // Reuse the join-failure budget: a wrong passphrase costs an attempt so the
+        // profile id space cannot be probed at will.
+        if (_throttle.IsJoinBlocked(ip))
+        {
+            await SendErrorAsync(conn, SessionErrorCode.RateLimited, "Too many attempts. Try again later.", ct);
+            return;
+        }
+
+        ProfileStore.PutResult result = _profiles.Put(p.ProfileId, p.AuthKey, p.Blob);
+        switch (result)
+        {
+            case ProfileStore.PutResult.Stored:
+                await conn.SendAsync(MessageType.ProfileAck, Array.Empty<byte>(), ct).ConfigureAwait(false);
+                Log($"Profile {Mask(p.ProfileId)} stored ({p.Blob.Length} bytes)");
+                break;
+            case ProfileStore.PutResult.TooLarge:
+                await SendErrorAsync(conn, SessionErrorCode.ProfileTooLarge, "Profile too large.", ct);
+                break;
+            default:
+                _throttle.RecordJoinFailure(ip);
+                await SendErrorAsync(conn, SessionErrorCode.ProfileAuthFailed, "Wrong sync passphrase.", ct);
+                break;
+        }
+    }
+
+    private async Task HandleProfileGetAsync(
+        ProfileGetPayload p, FramedConnection conn, string ip, CancellationToken ct)
+    {
+        if (_profiles is null)
+        {
+            await SendErrorAsync(conn, SessionErrorCode.ProfileDisabled, "Profile sync is disabled.", ct);
+            return;
+        }
+        if (_throttle.IsJoinBlocked(ip))
+        {
+            await SendErrorAsync(conn, SessionErrorCode.RateLimited, "Too many attempts. Try again later.", ct);
+            return;
+        }
+
+        (ProfileStore.GetStatus status, byte[] blob) = _profiles.Get(p.ProfileId, p.AuthKey);
+        switch (status)
+        {
+            case ProfileStore.GetStatus.Ok:
+                await conn.SendAsync(MessageType.ProfileData, new ProfileDataPayload(blob).Serialize(), ct)
+                    .ConfigureAwait(false);
+                break;
+            case ProfileStore.GetStatus.NotFound:
+                await SendErrorAsync(conn, SessionErrorCode.ProfileNotFound, "No profile stored yet.", ct);
+                break;
+            default:
+                _throttle.RecordJoinFailure(ip);
+                await SendErrorAsync(conn, SessionErrorCode.ProfileAuthFailed, "Wrong sync passphrase.", ct);
+                break;
         }
     }
 

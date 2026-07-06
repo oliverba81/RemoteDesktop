@@ -19,7 +19,9 @@ internal static class Program
         // Direct-launch flags bypass the chooser, for shortcuts and autostart.
         if (args.Any(a => a.Equals("--host", StringComparison.OrdinalIgnoreCase)))
         {
-            Application.Run(new HostForm());
+            // Autostart path: with unattended mode configured, HostForm goes
+            // straight to serving from the tray.
+            Application.Run(new HostForm(autoStart: true));
             return;
         }
         if (args.Any(a => a.Equals("--viewer", StringComparison.OrdinalIgnoreCase)))

@@ -20,6 +20,12 @@ public enum MessageType : byte
     QueryStatus = 5,
     StatusResponse = 6,
 
+    // --- Encrypted profile sync (plaintext control frames; the blob is opaque) ---
+    ProfilePut = 7,
+    ProfileGet = 8,
+    ProfileData = 9,
+    ProfileAck = 10,
+
     // --- End-to-end handshake (plaintext, blind-piped by the relay) ---
     Hello = 16,
     HelloAck = 17,
@@ -61,4 +67,8 @@ public enum SessionErrorCode : byte
     NotOwner = 5,           // re-register attempt without owner proof
     HostGone = 6,
     Internal = 7,
+    ProfileAuthFailed = 8,   // wrong passphrase for an existing profile
+    ProfileNotFound = 9,     // no profile stored for this id yet
+    ProfileTooLarge = 10,    // blob exceeds the relay's per-profile cap
+    ProfileDisabled = 11,    // relay has profile sync turned off
 }

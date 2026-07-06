@@ -1,0 +1,53 @@
+name: Release
+
+# Tagging v1.2.0 (etc.) publishes a GitHub Release with the Windows app and the
+# Synology .spk — the download page served by the NAS package links to
+# releases/latest, so this is what makes those buttons work.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # DSM wants x.y.z-rev; append -0001 when the tag has no revision part.
+      - name: Compute version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [[ "$VERSION" == *-* ]] || VERSION="$VERSION-0001"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Test (Shared + Relay)
+        run: dotnet test tests/RemoteDesktop.Shared.Tests/RemoteDesktop.Shared.Tests.csproj -c Release
+
+      - name: Publish Windows app (win-x64, self-contained)
+        run: |
+          VNUM="${VERSION%%-*}"
+          dotnet publish src/RemoteDesktop.App/RemoteDesktop.App.csproj -c Release -r win-x64 \
+            --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:Version="$VNUM" \
+            -o dist/clients/app
+          (cd dist/clients/app && zip -r ../../RemoteDesktop-win-x64.zip .)
+
+      - name: Build Synology .spk
+        run: bash packaging/synology/build-spk.sh "$VERSION"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/RemoteDesktop-win-x64.zip
+            dist/*.spk

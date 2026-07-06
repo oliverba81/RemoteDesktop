@@ -21,6 +21,56 @@ public sealed record RegisterSessionPayload(ushort Version, string SessionId, by
     }
 }
 
+public sealed record ProfilePutPayload(ushort Version, string ProfileId, byte[] AuthKey, byte[] Blob)
+{
+    public byte[] Serialize()
+    {
+        var w = new PayloadWriter();
+        w.WriteUInt16(Version);
+        w.WriteString(ProfileId);
+        w.WriteBytes(AuthKey);
+        w.WriteBytes(Blob);
+        return w.ToArray();
+    }
+
+    public static ProfilePutPayload Parse(ReadOnlySpan<byte> data)
+    {
+        var r = new PayloadReader(data);
+        return new ProfilePutPayload(r.ReadUInt16(), r.ReadString(), r.ReadBytes(), r.ReadBytes());
+    }
+}
+
+public sealed record ProfileGetPayload(ushort Version, string ProfileId, byte[] AuthKey)
+{
+    public byte[] Serialize()
+    {
+        var w = new PayloadWriter();
+        w.WriteUInt16(Version);
+        w.WriteString(ProfileId);
+        w.WriteBytes(AuthKey);
+        return w.ToArray();
+    }
+
+    public static ProfileGetPayload Parse(ReadOnlySpan<byte> data)
+    {
+        var r = new PayloadReader(data);
+        return new ProfileGetPayload(r.ReadUInt16(), r.ReadString(), r.ReadBytes());
+    }
+}
+
+public sealed record ProfileDataPayload(byte[] Blob)
+{
+    public byte[] Serialize()
+    {
+        var w = new PayloadWriter();
+        w.WriteBytes(Blob);
+        return w.ToArray();
+    }
+
+    public static ProfileDataPayload Parse(ReadOnlySpan<byte> data) =>
+        new(new PayloadReader(data).ReadBytes());
+}
+
 public sealed record JoinSessionPayload(ushort Version, string SessionId)
 {
     public byte[] Serialize()

@@ -1,3 +1,6 @@
+using RemoteDesktop.App.Ui;
+using RemoteDesktop.App.Update;
+
 namespace RemoteDesktop.App;
 
 internal enum LauncherChoice
@@ -19,78 +22,180 @@ internal sealed class LauncherForm : Form
     public LauncherForm()
     {
         Text = "RemoteDesktop";
-        Width = 520;
-        Height = 320;
+        ClientSize = new Size(620, 360);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
+        Theme.Apply(this);
 
-        var layout = new TableLayoutPanel
+        var title = new Label
         {
-            Dock = DockStyle.Fill,
-            ColumnCount = 2,
-            RowCount = 3,
-            Padding = new Padding(20),
+            Text = "RemoteDesktop",
+            Font = Theme.TitleFont,
+            AutoSize = true,
+            Location = new Point(28, 24),
         };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-
-        var intro = new Label
+        var subtitle = new Label
         {
             Text = "What should this PC do?",
-            Font = new Font(Font.FontFamily, 12, FontStyle.Bold),
+            ForeColor = Theme.TextMuted,
             AutoSize = true,
-            Margin = new Padding(3, 0, 3, 16),
+            Location = new Point(30, 58),
         };
-        layout.Controls.Add(intro, 0, 0);
-        layout.SetColumnSpan(intro, 2);
+        Controls.Add(title);
+        Controls.Add(subtitle);
 
-        var hostButton = new Button
+        Controls.Add(MakeCard(
+            new Point(28, 96), "🖥", "Share this PC", "Host",
+            "Let someone see and control this machine. Shows a session ID and " +
+            "password to hand to the other side.",
+            LauncherChoice.Host));
+
+        Controls.Add(MakeCard(
+            new Point(318, 96), "🎯", "Control another PC", "Viewer",
+            "Connect to a shared machine — enter its session ID and password, " +
+            "or pick a saved target from the address book.",
+            LauncherChoice.Viewer));
+
+        var hint = new Label
         {
-            Text = "Share this PC\n(Host)",
-            Dock = DockStyle.Fill,
-            Margin = new Padding(3, 0, 12, 0),
+            Text = "Tip: shortcuts can skip this screen with  --host  or  --viewer",
+            ForeColor = Theme.TextMuted,
+            AutoSize = true,
+            Location = new Point(30, 322),
         };
-        hostButton.Click += (_, _) => Pick(LauncherChoice.Host);
+        Controls.Add(hint);
 
-        var viewerButton = new Button
+        var version = new Label
         {
-            Text = "Control another PC\n(Viewer)",
-            Dock = DockStyle.Fill,
-            Margin = new Padding(12, 0, 3, 0),
+            Text = $"v{UpdateService.CurrentVersion.ToString(3)}",
+            ForeColor = Theme.TextMuted,
+            AutoSize = true,
+            Location = new Point(520, 24),
         };
-        viewerButton.Click += (_, _) => Pick(LauncherChoice.Viewer);
+        Controls.Add(version);
 
-        layout.Controls.Add(hostButton, 0, 1);
-        layout.Controls.Add(viewerButton, 1, 1);
-
-        var hostDesc = new Label
+        var check = new LinkLabel
         {
-            Text = "Let someone see and control this machine. Shows a session ID " +
-                   "and password to hand to the other side.",
-            Dock = DockStyle.Fill,
-            Margin = new Padding(3, 10, 12, 0),
+            Text = "Check for updates",
+            AutoSize = true,
+            Location = new Point(470, 322),
+            LinkColor = Theme.Accent,
+            ActiveLinkColor = Theme.AccentHover,
         };
-        var viewerDesc = new Label
-        {
-            Text = "Connect to a shared machine. Enter relay address, session ID " +
-                   "and password, or pick a saved target from the address book.",
-            Dock = DockStyle.Fill,
-            Margin = new Padding(12, 10, 3, 0),
-        };
-        layout.Controls.Add(hostDesc, 0, 2);
-        layout.Controls.Add(viewerDesc, 1, 2);
+        check.LinkClicked += (_, _) => _ = CheckForUpdatesAsync(interactive: true);
+        Controls.Add(check);
 
-        Controls.Add(layout);
-        AcceptButton = viewerButton;
+        Shown += (_, _) => _ = CheckForUpdatesAsync(interactive: false);
     }
 
-    private void Pick(LauncherChoice choice)
+    /// <summary>
+    /// Checks GitHub for a newer release. On start-up (interactive: false) it stays
+    /// silent unless an update exists; from the link it also reports "up to date"
+    /// and any error.
+    /// </summary>
+    private async Task CheckForUpdatesAsync(bool interactive)
     {
-        Choice = choice;
-        Close();
+        UpdateService.UpdateInfo? update;
+        try
+        {
+            update = await UpdateService.CheckAsync();
+        }
+        catch (Exception ex)
+        {
+            if (interactive)
+                MessageBox.Show(this, $"Could not check for updates:\n{ex.Message}", "RemoteDesktop");
+            return;
+        }
+
+        if (update is null)
+        {
+            if (interactive)
+                MessageBox.Show(this, "You are running the latest version.", "RemoteDesktop");
+            return;
+        }
+
+        string notes = update.Notes.Length > 600 ? update.Notes[..600] + "…" : update.Notes;
+        DialogResult r = MessageBox.Show(this,
+            $"Version {update.Version.ToString(3)} is available (you have {UpdateService.CurrentVersion.ToString(3)}).\n\n" +
+            $"{notes}\n\nDownload and install now? The app will restart.",
+            "Update available", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+        if (r != DialogResult.Yes) return;
+
+        try
+        {
+            if (await UpdateService.DownloadAndApplyAsync(update))
+                Application.Exit(); // updater swaps the files and relaunches
+            else
+                MessageBox.Show(this, "The update could not be downloaded.", "RemoteDesktop");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"Update failed:\n{ex.Message}", "RemoteDesktop");
+        }
+    }
+
+    private Panel MakeCard(Point location, string glyph, string heading, string tag,
+        string description, LauncherChoice choice)
+    {
+        var card = new Panel { Location = location, Size = new Size(274, 210), Cursor = Cursors.Hand };
+        Theme.StyleCard(card);
+
+        var icon = new Label
+        {
+            Text = glyph,
+            Font = new Font("Segoe UI Emoji", 26f),
+            AutoSize = true,
+            Location = new Point(18, 16),
+            BackColor = Color.Transparent,
+        };
+        var head = new Label
+        {
+            Text = heading,
+            Font = Theme.HeadingFont,
+            AutoSize = true,
+            Location = new Point(20, 76),
+            BackColor = Color.Transparent,
+        };
+        var role = new Label
+        {
+            Text = tag.ToUpperInvariant(),
+            ForeColor = Theme.Accent,
+            Font = new Font("Segoe UI Semibold", 8.5f),
+            AutoSize = true,
+            Location = new Point(21, 100),
+            BackColor = Color.Transparent,
+        };
+        var desc = new Label
+        {
+            Text = description,
+            ForeColor = Theme.TextMuted,
+            Location = new Point(20, 124),
+            Size = new Size(234, 76),
+            BackColor = Color.Transparent,
+        };
+
+        card.Controls.Add(icon);
+        card.Controls.Add(head);
+        card.Controls.Add(role);
+        card.Controls.Add(desc);
+
+        void Pick(object? s, EventArgs e)
+        {
+            Choice = choice;
+            Close();
+        }
+        void Hover(object? s, EventArgs e) => card.BackColor = Theme.SurfaceHover;
+        void Leave(object? s, EventArgs e) => card.BackColor = Theme.Surface;
+
+        card.Click += Pick;
+        card.MouseEnter += Hover;
+        card.MouseLeave += Leave;
+        foreach (Control child in card.Controls)
+        {
+            child.Click += Pick;
+            child.MouseEnter += Hover;
+        }
+        return card;
     }
 }

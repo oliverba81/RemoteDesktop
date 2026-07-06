@@ -19,6 +19,7 @@ namespace RemoteDesktop.Host.Capture;
 /// </summary>
 public sealed class GdiScreenCapturer : IDisposable
 {
+    private readonly Rectangle _bounds;
     private readonly int _width;
     private readonly int _height;
     private readonly Bitmap _bitmap;
@@ -28,14 +29,25 @@ public sealed class GdiScreenCapturer : IDisposable
     private TileHasher? _hasher;
     private uint _frameId;
 
-    public GdiScreenCapturer()
+    public GdiScreenCapturer() : this(PrimaryBounds())
     {
-        _width = Math.Max(1, NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN));
-        _height = Math.Max(1, NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN));
+    }
+
+    /// <summary>Captures the given desktop rectangle (one monitor's bounds).</summary>
+    public GdiScreenCapturer(Rectangle bounds)
+    {
+        _bounds = bounds;
+        _width = Math.Max(1, bounds.Width);
+        _height = Math.Max(1, bounds.Height);
         _bitmap = new Bitmap(_width, _height, PixelFormat.Format32bppArgb);
         _graphics = Graphics.FromImage(_bitmap);
         _jpegCodec = ImageCodecInfo.GetImageEncoders().First(c => c.FormatID == ImageFormat.Jpeg.Guid);
     }
+
+    public static Rectangle PrimaryBounds() => new(
+        0, 0,
+        Math.Max(1, NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN)),
+        Math.Max(1, NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN)));
 
     public PixelSize Size => new(_width, _height);
 
@@ -45,7 +57,7 @@ public sealed class GdiScreenCapturer : IDisposable
     /// </summary>
     public ScreenFramePayload? CaptureChanged(int jpegQuality)
     {
-        _graphics.CopyFromScreen(0, 0, 0, 0, new Size(_width, _height), CopyPixelOperation.SourceCopy);
+        _graphics.CopyFromScreen(_bounds.X, _bounds.Y, 0, 0, new Size(_width, _height), CopyPixelOperation.SourceCopy);
 
         var rect = new Rectangle(0, 0, _width, _height);
         BitmapData data = _bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
@@ -87,8 +99,10 @@ public sealed class GdiScreenCapturer : IDisposable
         var ci = new NativeMethods.CURSORINFO { cbSize = Marshal.SizeOf<NativeMethods.CURSORINFO>() };
         if (!NativeMethods.GetCursorInfo(ref ci))
             return new CursorUpdatePayload(0, 0, false, Array.Empty<byte>());
-        bool visible = (ci.flags & NativeMethods.CURSOR_SHOWING) != 0;
-        return new CursorUpdatePayload(ci.ptScreenPos.X, ci.ptScreenPos.Y, visible, Array.Empty<byte>());
+        bool visible = (ci.flags & NativeMethods.CURSOR_SHOWING) != 0
+            && _bounds.Contains(ci.ptScreenPos.X, ci.ptScreenPos.Y);
+        return new CursorUpdatePayload(
+            ci.ptScreenPos.X - _bounds.X, ci.ptScreenPos.Y - _bounds.Y, visible, Array.Empty<byte>());
     }
 
     public static int QualityToJpeg(QualityLevel level) => level switch
