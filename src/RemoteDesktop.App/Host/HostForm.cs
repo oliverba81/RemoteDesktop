@@ -144,7 +144,7 @@ public sealed class HostForm : Form
         Controls.Add(_sendFileButton);
         y += 52;
 
-        _autostartCheck.Text = "Start with Windows (host mode, in the tray)";
+        _autostartCheck.Text = "Start with Windows and begin serving automatically (in the tray)";
         _autostartCheck.AutoSize = true;
         _autostartCheck.ForeColor = Theme.TextMuted;
         _autostartCheck.Location = new Point(22, y);
@@ -361,8 +361,30 @@ public sealed class HostForm : Form
         try
         {
             using RegistryKey? key = Registry.CurrentUser.CreateSubKey(RunKey);
-            if (enabled) key?.SetValue(RunValue, $"\"{Application.ExecutablePath}\" --host");
-            else key?.DeleteValue(RunValue, throwOnMissingValue: false);
+            if (enabled)
+            {
+                key?.SetValue(RunValue, $"\"{Application.ExecutablePath}\" --host");
+
+                // Autostart only makes sense with unattended access: an attended
+                // session uses fresh random credentials each start that nobody would
+                // know. Turn it on and make sure the session can actually start after
+                // a reboot (relay + device password saved).
+                if (!_unattendedCheck.Checked) _unattendedCheck.Checked = true; // -> ApplyMode
+
+                bool hasPassword = _devicePasswordBox.Text.Length >= 8
+                    || _settings.ProtectedUnattendedPassword is not null;
+                bool hasRelay = _relayBox.Text.Trim().Length > 0;
+                if (!hasPassword || !hasRelay)
+                    MessageBox.Show(this,
+                        "For the host to start serving automatically after login, set the relay "
+                        + "address and a device password, then click \"Start session\" once. "
+                        + "Those settings are reused on every autostart.",
+                        "RemoteDesktop", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                key?.DeleteValue(RunValue, throwOnMissingValue: false);
+            }
         }
         catch (Exception ex)
         {
