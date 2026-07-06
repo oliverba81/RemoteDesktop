@@ -43,7 +43,7 @@ public sealed class HostForm : Form
             ? ""
             : $"{_settings.RelayHost}:{_settings.RelayPort}";
         _relayBox.Dock = DockStyle.Fill;
-        _relayBox.PlaceholderText = "relay.example.synology.me:9945";
+        _relayBox.PlaceholderText = "name.synology.me (port optional, default 9945)";
 
         _sessionIdLabel.Font = new Font(FontFamily.GenericMonospace, 16, FontStyle.Bold);
         _passwordLabel.Font = new Font(FontFamily.GenericMonospace, 16, FontStyle.Bold);

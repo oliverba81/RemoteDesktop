@@ -41,7 +41,7 @@ public sealed class ConnectForm : Form
         q.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
         q.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         _relayBox.Dock = DockStyle.Fill;
-        _relayBox.PlaceholderText = "relay.example.synology.me:9945";
+        _relayBox.PlaceholderText = "name.synology.me (port optional, default 9945)";
         _sessionBox.Dock = DockStyle.Fill;
         _passwordBox.Dock = DockStyle.Fill;
         _passwordBox.UseSystemPasswordChar = true;
