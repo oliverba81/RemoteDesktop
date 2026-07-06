@@ -1,9 +1,16 @@
 name: CI
 
 on:
+  # Only build main directly; feature branches are covered by their pull_request
+  # run, so an open PR no longer triggers CI twice (once per push, once per PR).
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
+
+# A newer push to the same branch/PR cancels the previous, still-running CI.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-test:
