@@ -23,8 +23,12 @@ else
 fi
 export RELAY_PORT
 
+# Encrypted address-book sync: the relay stores opaque blobs here (it never sees
+# the passphrase or the plaintext). Lives in the writable package var/.
+export RELAY_PROFILE_DIR="${PKGVAR}/profiles"
+
 start_daemon() {
-    mkdir -p "${PKGVAR}" "${DOTNET_BUNDLE_EXTRACT_BASE_DIR}"
+    mkdir -p "${PKGVAR}" "${DOTNET_BUNDLE_EXTRACT_BASE_DIR}" "${RELAY_PROFILE_DIR}"
     "${BIN}" >> "${LOGFILE}" 2>&1 &
     echo $! > "${PIDFILE}"
 }

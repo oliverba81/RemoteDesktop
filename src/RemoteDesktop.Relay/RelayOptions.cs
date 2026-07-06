@@ -26,12 +26,24 @@ public sealed class RelayOptions
     /// <summary>Cap on entries in a single QueryStatus request.</summary>
     public int MaxQueryBatch { get; init; } = 64;
 
+    /// <summary>Directory for encrypted profile blobs. Null disables profile sync.</summary>
+    public string? ProfileDir { get; init; }
+
+    /// <summary>Per-profile blob size cap (encrypted address book is tiny).</summary>
+    public int MaxProfileBytes { get; init; } = 1 * 1024 * 1024;
+
     public static RelayOptions FromEnvironment()
     {
         var opts = new RelayOptions();
         string? portEnv = Environment.GetEnvironmentVariable("RELAY_PORT");
-        if (int.TryParse(portEnv, out int port) && port is > 0 and < 65536)
-            opts = new RelayOptions { Port = port };
-        return opts;
+        int port = opts.Port;
+        if (int.TryParse(portEnv, out int parsed) && parsed is > 0 and < 65536)
+            port = parsed;
+
+        // Empty/unset disables profile sync (relay stays a pure blind pipe).
+        string? profileDir = Environment.GetEnvironmentVariable("RELAY_PROFILE_DIR");
+        if (string.IsNullOrWhiteSpace(profileDir)) profileDir = null;
+
+        return new RelayOptions { Port = port, ProfileDir = profileDir };
     }
 }

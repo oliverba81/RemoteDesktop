@@ -39,6 +39,7 @@ public sealed class ConnectForm : Form
         AddButton(listButtons, "Edit…", () => { if (Selected() is { } e) EditEntry(e); });
         AddButton(listButtons, "Delete", DeleteSelected);
         AddButton(listButtons, "Refresh status", () => _ = RefreshStatusAsync());
+        AddButton(listButtons, "Sync…", OpenSync);
 
         var quick = new GroupBox
         {
@@ -133,6 +134,23 @@ public sealed class ConnectForm : Form
         _book.Save();
         RefreshList();
         _ = RefreshStatusAsync();
+    }
+
+    private void OpenSync()
+    {
+        string defaultRelay = _relayBox.Text.Trim();
+        if (defaultRelay.Length == 0 && _book.Entries.Count > 0)
+        {
+            AddressBookEntry e = _book.Entries[0];
+            defaultRelay = $"{e.RelayHost}:{e.RelayPort}";
+        }
+        using var dlg = new SyncForm(_book, defaultRelay);
+        dlg.ShowDialog(this);
+        if (dlg.BookChanged)
+        {
+            RefreshList();
+            _ = RefreshStatusAsync();
+        }
     }
 
     private void DeleteSelected()

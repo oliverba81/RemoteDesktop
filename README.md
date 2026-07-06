@@ -76,6 +76,13 @@ Tray-Betrieb, „Start with Windows"), **Auto-Reconnect im Viewer**,
 Bandbreite 0,3–1,5 Mbit/s gilt für ruhenden Desktop, bei Video/Scrollen
 deutlich mehr.
 
+**Profil-Sync (verschlüsselt):** Der Viewer kann sein Adressbuch (inkl.
+Passwörter) über das Relay auf der NAS ablegen und auf anderen PCs abrufen —
+„Sync…" im Adressbuch, Sync-Passphrase setzen, Upload/Download. Aus der
+Passphrase werden clientseitig Profil-ID, Auth-Schlüssel und AES-Schlüssel
+abgeleitet (Argon2id→HKDF); die NAS speichert nur einen für sie unlesbaren
+Blob unter `var/profiles/` und kennt weder Passphrase noch Inhalt.
+
 **Roadmap:** echtes PAKE (CPace), DXGI-Capture, Windows-Dienst am Host
 (UAC/Strg+Alt+Entf), Datei-Resume-UI.
 
