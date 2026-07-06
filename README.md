@@ -154,9 +154,14 @@ und das Paket neu starten.
 
 **Unbeaufsichtigter Zugriff:** Am Host „Unattended access" aktivieren und ein
 Gerätepasswort (min. 8 Zeichen) setzen — die Session-ID bleibt dauerhaft gleich
-und der Host läuft im Tray weiter. Zusammen mit „Start with Windows" ist der
-PC nach jedem Boot ohne Zutun erreichbar; im Viewer ID + Gerätepasswort im
-Adressbuch speichern.
+und der Host läuft im Tray weiter. „Start with Windows" aktiviert zugleich den
+unbeaufsichtigten Modus und **startet die Session nach dem Login automatisch**
+(unsichtbar im Tray) — der PC ist nach jedem Boot ohne Zutun erreichbar; im
+Viewer ID + Gerätepasswort im Adressbuch speichern.
+
+Die App läuft **pro Windows-Sitzung nur einmal**: ein zweiter Start holt das
+bereits laufende Fenster (bzw. den Host aus dem Tray) nach vorn statt eine
+zweite Instanz zu öffnen.
 
 Verknüpfungen können die Auswahl mit `RemoteDesktop.exe --host` bzw.
 `--viewer` überspringen.

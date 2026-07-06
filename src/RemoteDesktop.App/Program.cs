@@ -16,6 +16,12 @@ internal static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
+        // Single instance per session: a second launch surfaces the running window
+        // (e.g. the host sitting in the tray) and exits instead of opening again.
+        if (!SingleInstance.TryAcquire())
+            return;
+        using var singleInstanceListener = new SingleInstanceListener();
+
         // Direct-launch flags bypass the chooser, for shortcuts and autostart.
         if (args.Any(a => a.Equals("--host", StringComparison.OrdinalIgnoreCase)))
         {

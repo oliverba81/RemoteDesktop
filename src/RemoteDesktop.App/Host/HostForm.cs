@@ -53,6 +53,14 @@ public sealed class HostForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         Theme.Apply(this);
 
+        // Autostart launches straight into the tray (minimized), never a visible
+        // window flash, always in host mode (the --host launch creates this form).
+        if (_autoStart)
+        {
+            WindowState = FormWindowState.Minimized;
+            ShowInTaskbar = false;
+        }
+
         int y = 20;
 
         // ---- connection card ----
@@ -144,7 +152,7 @@ public sealed class HostForm : Form
         Controls.Add(_sendFileButton);
         y += 52;
 
-        _autostartCheck.Text = "Start with Windows (host mode, in the tray)";
+        _autostartCheck.Text = "Start with Windows and begin serving automatically (in the tray)";
         _autostartCheck.AutoSize = true;
         _autostartCheck.ForeColor = Theme.TextMuted;
         _autostartCheck.Location = new Point(22, y);
@@ -319,26 +327,36 @@ public sealed class HostForm : Form
         }
     }
 
+    /// <summary>Restore from the tray on a second-launch "show" ping (single instance).</summary>
+    public void RestoreFromTrayPublic() => RestoreFromTray();
+
     private void RestoreFromTray()
     {
         _tray.Visible = false;
+        ShowInTaskbar = true; // autostart started us without a taskbar button
         Show();
         WindowState = FormWindowState.Normal;
         Activate();
     }
 
-    /// <summary>With --host and a fully configured unattended mode, go straight to
-    /// serving from the tray (autostart path).</summary>
+    /// <summary>Autostart path (--host): always land minimized in the tray, in host
+    /// mode. If unattended access is fully configured, also start serving right away;
+    /// otherwise the host waits in the tray and can be opened to finish setup.</summary>
     private void AutoStartIfConfigured()
     {
         if (!_autoStart) return;
-        if (!_settings.UnattendedEnabled) return;
-        if (string.IsNullOrEmpty(_settings.RelayHost)) return;
-        if (HostSettings.Unprotect(_settings.ProtectedUnattendedPassword) is null) return;
 
-        _unattendedCheck.Checked = true;
-        Start();
-        if (_running) BeginInvoke(HideToTray);
+        bool canServe = _settings.UnattendedEnabled
+            && !string.IsNullOrEmpty(_settings.RelayHost)
+            && HostSettings.Unprotect(_settings.ProtectedUnattendedPassword) is not null;
+
+        if (canServe)
+        {
+            _unattendedCheck.Checked = true;
+            Start();
+        }
+
+        BeginInvoke(HideToTray);
     }
 
     // ---- autostart (HKCU Run key) ----
@@ -361,8 +379,30 @@ public sealed class HostForm : Form
         try
         {
             using RegistryKey? key = Registry.CurrentUser.CreateSubKey(RunKey);
-            if (enabled) key?.SetValue(RunValue, $"\"{Application.ExecutablePath}\" --host");
-            else key?.DeleteValue(RunValue, throwOnMissingValue: false);
+            if (enabled)
+            {
+                key?.SetValue(RunValue, $"\"{Application.ExecutablePath}\" --host");
+
+                // Autostart only makes sense with unattended access: an attended
+                // session uses fresh random credentials each start that nobody would
+                // know. Turn it on and make sure the session can actually start after
+                // a reboot (relay + device password saved).
+                if (!_unattendedCheck.Checked) _unattendedCheck.Checked = true; // -> ApplyMode
+
+                bool hasPassword = _devicePasswordBox.Text.Length >= 8
+                    || _settings.ProtectedUnattendedPassword is not null;
+                bool hasRelay = _relayBox.Text.Trim().Length > 0;
+                if (!hasPassword || !hasRelay)
+                    MessageBox.Show(this,
+                        "For the host to start serving automatically after login, set the relay "
+                        + "address and a device password, then click \"Start session\" once. "
+                        + "Those settings are reused on every autostart.",
+                        "RemoteDesktop", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                key?.DeleteValue(RunValue, throwOnMissingValue: false);
+            }
         }
         catch (Exception ex)
         {
