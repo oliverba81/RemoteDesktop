@@ -64,14 +64,20 @@ beide Richtungen, mit Passwort-Leak-Schutz)** und **Dateiübertragung (beide
 Richtungen, SHA-256-verifiziert, `.part`+atomarer Rename, Annahme-Dialog im
 Viewer / Auto-Annahme in Downloads am Host)**.
 
-**v1-Grenzen (dokumentiert):** nur **primärer Monitor**; UAC-erhöhte Fenster
-empfangen keine Eingaben; `Strg+Alt+Entf` nicht injizierbar; `Win`/`Alt+Tab`
-werden lokal abgefangen (noch kein Low-Level-Hook); Cursor als Position
-übertragen (Form vereinfacht); Bandbreite 0,3–1,5 Mbit/s gilt für ruhenden
-Desktop, bei Video/Scrollen deutlich mehr.
+**v1.2 (dieser Stand):** modernes dunkles UI mit Rollenauswahl beim Start,
+**unbeaufsichtigter Zugriff** (feste Geräte-ID + Gerätepasswort, DPAPI-verschlüsselt,
+Tray-Betrieb, „Start with Windows"), **Auto-Reconnect im Viewer**,
+**Monitor-Auswahl am Host** (Multi-Monitor), GitHub-Release-Workflow
+(`git tag v1.2.0 && git push --tags` veröffentlicht EXE-Zip + .spk).
 
-**Roadmap:** Reconnect-UX, unbeaufsichtigter Zugriff, echtes PAKE (CPace),
-DXGI-Capture, Multi-Monitor, Datei-Resume-UI.
+**Grenzen (dokumentiert):** UAC-erhöhte Fenster empfangen keine Eingaben;
+`Strg+Alt+Entf` nicht injizierbar; `Win`/`Alt+Tab` werden lokal abgefangen
+(noch kein Low-Level-Hook); Cursor als Position übertragen (Form vereinfacht);
+Bandbreite 0,3–1,5 Mbit/s gilt für ruhenden Desktop, bei Video/Scrollen
+deutlich mehr.
+
+**Roadmap:** echtes PAKE (CPace), DXGI-Capture, Windows-Dienst am Host
+(UAC/Strg+Alt+Entf), Datei-Resume-UI.
 
 ## Bauen & Testen
 
@@ -118,11 +124,17 @@ und das Paket neu starten.
 ## Verwenden
 
 1. `RemoteDesktop.exe` auf dem zu steuernden PC starten und **Share this PC
-   (Host)** wählen, Relay-Adresse `name.synology.me:9945` eintragen, *Start
-   session* — er zeigt **Session-ID** und **Passwort**.
+   (Host)** wählen, Relay-Adresse `name.synology.me` eintragen (Port optional,
+   Standard 9945), *Start session* — er zeigt **Session-ID** und **Passwort**.
 2. `RemoteDesktop.exe` auf dem steuernden PC starten und **Control another PC
    (Viewer)** wählen: Relay-Adresse, Session-ID und Passwort eingeben (oder im
    Adressbuch speichern) → *Connect*.
+
+**Unbeaufsichtigter Zugriff:** Am Host „Unattended access" aktivieren und ein
+Gerätepasswort (min. 8 Zeichen) setzen — die Session-ID bleibt dauerhaft gleich
+und der Host läuft im Tray weiter. Zusammen mit „Start with Windows" ist der
+PC nach jedem Boot ohne Zutun erreichbar; im Viewer ID + Gerätepasswort im
+Adressbuch speichern.
 
 Verknüpfungen können die Auswahl mit `RemoteDesktop.exe --host` bzw.
 `--viewer` überspringen.

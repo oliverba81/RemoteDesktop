@@ -12,6 +12,16 @@ namespace RemoteDesktop.Host.Input;
 /// </summary>
 public sealed class InputInjector
 {
+    private Rectangle _bounds = new(0, 0,
+        Math.Max(1, GetSystemMetrics(SM_CXSCREEN)), Math.Max(1, GetSystemMetrics(SM_CYSCREEN)));
+
+    /// <summary>The desktop rectangle the viewer's coordinates refer to (the
+    /// captured monitor). Movement is mapped from it onto the virtual desktop.</summary>
+    public void SetCaptureBounds(Rectangle bounds)
+    {
+        if (bounds.Width > 0 && bounds.Height > 0) _bounds = bounds;
+    }
+
     private static readonly ushort[] ModifierVks =
     {
         0xA0, 0xA1, // L/R Shift
@@ -24,8 +34,10 @@ public sealed class InputInjector
     {
         var inputs = new List<INPUT>(2);
 
-        // Movement is always sent as an absolute position over the primary monitor.
-        inputs.Add(MouseInput(p.NormX, p.NormY, 0, MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE));
+        // The viewer normalizes to the captured monitor; re-normalize onto the
+        // virtual desktop so non-primary monitors receive input too.
+        (ushort nx, ushort ny) = MapToVirtualDesktop(p.NormX, p.NormY);
+        inputs.Add(MouseInput(nx, ny, 0, MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK));
 
         uint flags = 0;
         uint mouseData = 0;
@@ -41,9 +53,22 @@ public sealed class InputInjector
             mouseData = unchecked((uint)p.WheelDelta);
         }
         if (flags != 0)
-            inputs.Add(MouseInput(p.NormX, p.NormY, mouseData, flags | MOUSEEVENTF_ABSOLUTE));
+            inputs.Add(MouseInput(nx, ny, mouseData, flags | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK));
 
         Send(inputs);
+    }
+
+    private (ushort, ushort) MapToVirtualDesktop(ushort normX, ushort normY)
+    {
+        double px = _bounds.X + normX / 65535.0 * _bounds.Width;
+        double py = _bounds.Y + normY / 65535.0 * _bounds.Height;
+        int vx = GetSystemMetrics(SM_XVIRTUALSCREEN);
+        int vy = GetSystemMetrics(SM_YVIRTUALSCREEN);
+        int vw = Math.Max(1, GetSystemMetrics(SM_CXVIRTUALSCREEN));
+        int vh = Math.Max(1, GetSystemMetrics(SM_CYVIRTUALSCREEN));
+        var nx = (ushort)Math.Clamp((px - vx) * 65535.0 / vw, 0, 65535);
+        var ny = (ushort)Math.Clamp((py - vy) * 65535.0 / vh, 0, 65535);
+        return (nx, ny);
     }
 
     public void Keyboard(InputKeyboardPayload p)

@@ -1,3 +1,4 @@
+using RemoteDesktop.App.Ui;
 using RemoteDesktop.Shared.Protocol;
 using RemoteDesktop.Windows;
 
@@ -22,6 +23,7 @@ public sealed class ViewerForm : Form
     private readonly HashSet<Keys> _vkDown = new();
     private readonly ClipboardMonitor _clipboard = new();
     private readonly ToolStripButton _sendFile = new("Send file…");
+    private volatile bool _everConnected;
 
     public ViewerForm(string relayHost, int relayPort, string sessionId, string password)
     {
@@ -30,12 +32,17 @@ public sealed class ViewerForm : Form
         Height = 720;
         StartPosition = FormStartPosition.CenterScreen;
         KeyPreview = true;
+        Theme.Apply(this);
 
         _screen.Dock = DockStyle.Fill;
         _session = new ViewerSession(relayHost, relayPort, sessionId, password, _screen);
         _session.Status += s => TryUi(() => _status.Text = s);
-        _session.Connected += size => TryUi(() => { _screen.ResetRemote(size); _sendFile.Enabled = true; });
-        _session.Disconnected += () => TryUi(Close);
+        _session.Connected += size =>
+        {
+            _everConnected = true;
+            TryUi(() => { _screen.ResetRemote(size); _sendFile.Enabled = true; });
+        };
+        _session.Disconnected += () => TryUi(() => _sendFile.Enabled = false);
         _session.RemoteClipboardText += t => TryUi(() => _clipboard.SetRemoteText(t));
         _session.FileProgress += (name, done, total, incoming) => TryUi(() =>
             _status.Text = $"{(incoming ? "Receiving" : "Sending")} {name} — {done * 100 / Math.Max(1, total)}%");
@@ -57,8 +64,12 @@ public sealed class ViewerForm : Form
         toolbar.Items.Add(new ToolStripSeparator());
         toolbar.Items.Add(quality);
 
+        Theme.StyleToolStrip(toolbar);
+
         var statusStrip = new StatusStrip();
         statusStrip.Items.Add(_status);
+        Theme.StyleToolStrip(statusStrip);
+        _status.ForeColor = Theme.TextMuted;
 
         Controls.Add(_screen);
         Controls.Add(toolbar);
@@ -68,20 +79,42 @@ public sealed class ViewerForm : Form
         Deactivate += (_, _) => _session.SendInputReset(); // release modifiers on focus loss
     }
 
+    /// <summary>
+    /// Connect loop with auto-reconnect: a failure before the first successful
+    /// pairing is fatal (wrong id/password/relay → dialog + close), but once a
+    /// session existed, drops and host restarts are retried every few seconds
+    /// until the user closes the window.
+    /// </summary>
     private async Task RunSessionAsync()
     {
-        try
+        while (!_cts.IsCancellationRequested)
         {
-            await _session.RunAsync(_cts.Token);
-        }
-        catch (OperationCanceledException) { /* closing */ }
-        catch (Exception ex)
-        {
-            TryUi(() =>
+            try
             {
-                MessageBox.Show(this, ex.Message, "Connection failed");
-                Close();
-            });
+                await _session.RunAsync(_cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return; // window closing
+            }
+            catch (Exception ex)
+            {
+                if (!_everConnected)
+                {
+                    TryUi(() =>
+                    {
+                        MessageBox.Show(this, ex.Message, "Connection failed");
+                        Close();
+                    });
+                    return;
+                }
+                TryUi(() => _status.Text = $"Connection lost — reconnecting… ({ex.Message})");
+            }
+
+            if (_cts.IsCancellationRequested) return;
+            TryUi(() => _status.Text = "Connection lost — reconnecting…");
+            try { await Task.Delay(TimeSpan.FromSeconds(3), _cts.Token); }
+            catch (OperationCanceledException) { return; }
         }
     }
 

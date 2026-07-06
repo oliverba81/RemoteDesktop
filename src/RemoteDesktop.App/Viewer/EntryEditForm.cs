@@ -1,3 +1,5 @@
+using RemoteDesktop.App.Ui;
+
 namespace RemoteDesktop.Viewer;
 
 /// <summary>Add/edit dialog for an address-book entry.</summary>
@@ -20,11 +22,16 @@ public sealed class EntryEditForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterParent;
         MinimizeBox = MaximizeBox = false;
+        Theme.Apply(this);
 
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Padding = new Padding(10) };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        foreach (var box in new[] { _name, _relay, _session, _password }) box.Dock = DockStyle.Fill;
+        foreach (var box in new[] { _name, _relay, _session, _password })
+        {
+            box.Dock = DockStyle.Fill;
+            Theme.StyleTextBox(box);
+        }
         _password.UseSystemPasswordChar = true;
         _password.PlaceholderText = _isNew ? "" : "(unchanged)";
 
@@ -35,18 +42,20 @@ public sealed class EntryEditForm : Form
             _session.Text = existing.SessionId;
         }
 
-        layout.Controls.Add(new Label { Text = "Name:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
+        layout.Controls.Add(new Label { Text = "Name:", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Theme.TextMuted }, 0, 0);
         layout.Controls.Add(_name, 1, 0);
-        layout.Controls.Add(new Label { Text = "Relay host:port:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 1);
+        layout.Controls.Add(new Label { Text = "Relay host:port:", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Theme.TextMuted }, 0, 1);
         layout.Controls.Add(_relay, 1, 1);
-        layout.Controls.Add(new Label { Text = "Session ID:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 2);
+        layout.Controls.Add(new Label { Text = "Session ID:", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Theme.TextMuted }, 0, 2);
         layout.Controls.Add(_session, 1, 2);
-        layout.Controls.Add(new Label { Text = "Password:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 3);
+        layout.Controls.Add(new Label { Text = "Password:", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Theme.TextMuted }, 0, 3);
         layout.Controls.Add(_password, 1, 3);
 
         var ok = new Button { Text = "OK", DialogResult = DialogResult.None };
+        Theme.StylePrimary(ok);
         ok.Click += (_, _) => OnOk(existing);
         var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel };
+        Theme.StyleSecondary(cancel);
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, AutoSize = true };
         buttons.Controls.Add(cancel);
         buttons.Controls.Add(ok);
@@ -96,8 +105,11 @@ internal static class Prompt
             MinimizeBox = false,
             MaximizeBox = false,
         };
+        Theme.Apply(form);
         var box = new TextBox { Dock = DockStyle.Top, UseSystemPasswordChar = true, Margin = new Padding(10) };
+        Theme.StyleTextBox(box);
         var ok = new Button { Text = "OK", Dock = DockStyle.Bottom, DialogResult = DialogResult.OK };
+        Theme.StylePrimary(ok);
         form.Controls.Add(box);
         form.Controls.Add(ok);
         form.AcceptButton = ok;

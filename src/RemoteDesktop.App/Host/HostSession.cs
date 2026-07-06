@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing;
 using System.Net.Sockets;
 using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Input;
@@ -21,19 +22,23 @@ public sealed class HostSession : IAsyncDisposable
     private readonly string _sessionId;
     private readonly string _password;
     private readonly byte[] _ownerTag;
+    private readonly Rectangle _captureBounds;
     private readonly InputInjector _injector = new();
     private readonly SemaphoreSlim _ackSlots = new(2, 2);
     private volatile QualityLevel _quality = QualityLevel.Medium;
     private SendScheduler? _scheduler;
     private FileTransferService? _files;
 
-    public HostSession(string relayHost, int relayPort, string sessionId, string password, byte[] ownerTag)
+    public HostSession(string relayHost, int relayPort, string sessionId, string password, byte[] ownerTag,
+        Rectangle? captureBounds = null)
     {
         _relayHost = relayHost;
         _relayPort = relayPort;
         _sessionId = sessionId;
         _password = password;
         _ownerTag = ownerTag;
+        _captureBounds = captureBounds ?? GdiScreenCapturer.PrimaryBounds();
+        _injector.SetCaptureBounds(_captureBounds);
     }
 
     public event Action<string>? Status;
@@ -76,7 +81,7 @@ public sealed class HostSession : IAsyncDisposable
 
     private async Task ServeOnceAsync(CancellationToken ct)
     {
-        using var capturer = new GdiScreenCapturer();
+        using var capturer = new GdiScreenCapturer(_captureBounds);
 
         Status?.Invoke("Connecting to relay…");
         using var client = new TcpClient();

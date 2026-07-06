@@ -1,3 +1,5 @@
+using RemoteDesktop.App.Ui;
+
 namespace RemoteDesktop.Viewer;
 
 /// <summary>
@@ -16,13 +18,15 @@ public sealed class ConnectForm : Form
     public ConnectForm()
     {
         Text = "RemoteDesktop — Connect";
-        Width = 560;
-        Height = 460;
+        Width = 580;
+        Height = 500;
         StartPosition = FormStartPosition.CenterScreen;
+        Theme.Apply(this);
 
         _list.View = View.Details;
         _list.FullRowSelect = true;
         _list.Dock = DockStyle.Fill;
+        Theme.StyleListView(_list);
         _list.Columns.Add("", 28);
         _list.Columns.Add("Name", 160);
         _list.Columns.Add("Relay", 200);
@@ -36,7 +40,14 @@ public sealed class ConnectForm : Form
         AddButton(listButtons, "Delete", DeleteSelected);
         AddButton(listButtons, "Refresh status", () => _ = RefreshStatusAsync());
 
-        var quick = new GroupBox { Text = "Quick connect", Dock = DockStyle.Bottom, Height = 150 };
+        var quick = new GroupBox
+        {
+            Text = "Quick connect",
+            Dock = DockStyle.Bottom,
+            Height = 158,
+            ForeColor = Theme.TextMuted,
+            FlatStyle = FlatStyle.Flat,
+        };
         var q = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Padding = new Padding(8) };
         q.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
         q.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -45,14 +56,18 @@ public sealed class ConnectForm : Form
         _sessionBox.Dock = DockStyle.Fill;
         _passwordBox.Dock = DockStyle.Fill;
         _passwordBox.UseSystemPasswordChar = true;
+        foreach (var box in new[] { _relayBox, _sessionBox, _passwordBox }) Theme.StyleTextBox(box);
         _saveBox.Text = "Save to address book";
-        q.Controls.Add(new Label { Text = "Relay:", Anchor = AnchorStyles.Left, AutoSize = true }, 0, 0);
+        _saveBox.AutoSize = true;
+        _saveBox.ForeColor = Theme.Text;
+        q.Controls.Add(new Label { Text = "Relay:", Anchor = AnchorStyles.Left, AutoSize = true, ForeColor = Theme.TextMuted }, 0, 0);
         q.Controls.Add(_relayBox, 1, 0);
-        q.Controls.Add(new Label { Text = "Session ID:", Anchor = AnchorStyles.Left, AutoSize = true }, 0, 1);
+        q.Controls.Add(new Label { Text = "Session ID:", Anchor = AnchorStyles.Left, AutoSize = true, ForeColor = Theme.TextMuted }, 0, 1);
         q.Controls.Add(_sessionBox, 1, 1);
-        q.Controls.Add(new Label { Text = "Password:", Anchor = AnchorStyles.Left, AutoSize = true }, 0, 2);
+        q.Controls.Add(new Label { Text = "Password:", Anchor = AnchorStyles.Left, AutoSize = true, ForeColor = Theme.TextMuted }, 0, 2);
         q.Controls.Add(_passwordBox, 1, 2);
         var quickConnect = new Button { Text = "Connect", Dock = DockStyle.Fill };
+        Theme.StylePrimary(quickConnect);
         quickConnect.Click += (_, _) => QuickConnect();
         q.Controls.Add(_saveBox, 1, 3);
         q.Controls.Add(quickConnect, 1, 4);
@@ -69,6 +84,7 @@ public sealed class ConnectForm : Form
     private static void AddButton(Control parent, string text, Action onClick)
     {
         var b = new Button { Text = text, AutoSize = true };
+        Theme.StyleSecondary(b);
         b.Click += (_, _) => onClick();
         parent.Controls.Add(b);
     }
@@ -82,7 +98,7 @@ public sealed class ConnectForm : Form
             var item = new ListViewItem(new[] { dot, e.DisplayName, $"{e.RelayHost}:{e.RelayPort}", e.SessionId })
             {
                 Tag = e,
-                ForeColor = e.Online == true ? Color.Green : SystemColors.ControlText,
+                ForeColor = e.Online == true ? Theme.Success : Theme.Text,
             };
             _list.Items.Add(item);
         }
