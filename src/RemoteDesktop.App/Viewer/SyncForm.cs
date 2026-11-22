@@ -21,7 +21,8 @@ public sealed class SyncForm : Form
     {
         _book = book;
         Text = "RemoteDesktop — Sync address book";
-        ClientSize = new Size(440, 288);
+        AutoScaleMode = AutoScaleMode.None;
+        ClientSize = new Size(560, 340);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterParent;
         MinimizeBox = MaximizeBox = false;
@@ -32,36 +33,36 @@ public sealed class SyncForm : Form
             Text = "Store your address book on the relay, encrypted with a passphrase. " +
                    "Use the same relay and passphrase on another PC to get it back.",
             ForeColor = Theme.TextMuted,
-            Location = new Point(18, 16),
-            Size = new Size(404, 48),
+            Location = new Point(24, 20),
+            Size = new Size(512, 52),
         };
 
-        var relayLabel = new Label { Text = "Relay:", ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(18, 78) };
-        _relayBox.Location = new Point(140, 74);
-        _relayBox.Width = 282;
+        var relayLabel = new Label { Text = "Relay:", ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(24, 90) };
+        _relayBox.Location = new Point(160, 86);
+        _relayBox.Width = 376;
         _relayBox.Text = defaultRelay;
         _relayBox.PlaceholderText = "name.synology.me (port optional, default 9945)";
         Theme.StyleTextBox(_relayBox);
 
-        var passLabel = new Label { Text = "Sync passphrase:", ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(18, 114) };
-        _passphraseBox.Location = new Point(140, 110);
-        _passphraseBox.Width = 282;
+        var passLabel = new Label { Text = "Sync passphrase:", ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(24, 130) };
+        _passphraseBox.Location = new Point(160, 126);
+        _passphraseBox.Width = 376;
         _passphraseBox.UseSystemPasswordChar = true;
         Theme.StyleTextBox(_passphraseBox);
 
-        var upload = new Button { Text = "Upload", Location = new Point(140, 154), Size = new Size(135, 36) };
+        var upload = new Button { Text = "Upload", Location = new Point(160, 176), Size = new Size(160, 40) };
         Theme.StylePrimary(upload);
         upload.Click += (_, _) => _ = RunAsync(isUpload: true);
 
-        var download = new Button { Text = "Download & merge", Location = new Point(287, 154), Size = new Size(135, 36) };
+        var download = new Button { Text = "Download & merge", Location = new Point(336, 176), Size = new Size(200, 40) };
         Theme.StyleSecondary(download);
         download.Click += (_, _) => _ = RunAsync(isUpload: false);
 
         _status.ForeColor = Theme.TextMuted;
-        _status.Location = new Point(18, 202);
-        _status.Size = new Size(404, 40);
+        _status.Location = new Point(24, 236);
+        _status.Size = new Size(512, 44);
 
-        var close = new Button { Text = "Close", Location = new Point(342, 244), Size = new Size(80, 32), DialogResult = DialogResult.OK };
+        var close = new Button { Text = "Close", Location = new Point(456, 288), Size = new Size(100, 36), DialogResult = DialogResult.OK };
         Theme.StyleSecondary(close);
 
         Controls.AddRange(new Control[]

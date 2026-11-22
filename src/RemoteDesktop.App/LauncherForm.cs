@@ -22,11 +22,10 @@ internal sealed class LauncherForm : Form
     public LauncherForm()
     {
         Text = "RemoteDesktop";
-        // Layout is authored at 96 DPI; PerMonitorV2 then scales ClientSize and
-        // control bounds so emoji metrics / wrapped text still fit at 125–150%.
-        AutoScaleDimensions = new SizeF(96F, 96F);
-        AutoScaleMode = AutoScaleMode.Dpi;
-        ClientSize = new Size(680, 440);
+        // Generous fixed size so titles, card copy and the footer tip stay fully
+        // visible even when Windows display scaling enlarges fonts.
+        AutoScaleMode = AutoScaleMode.None;
+        ClientSize = new Size(900, 560);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
@@ -37,61 +36,58 @@ internal sealed class LauncherForm : Form
             Text = "RemoteDesktop",
             Font = Theme.TitleFont,
             AutoSize = true,
-            Location = new Point(28, 24),
+            Location = new Point(36, 28),
         };
         var subtitle = new Label
         {
             Text = "What should this PC do?",
             ForeColor = Theme.TextMuted,
             AutoSize = true,
-            Location = new Point(30, 58),
+            Location = new Point(38, 66),
         };
         Controls.Add(title);
         Controls.Add(subtitle);
 
         Controls.Add(MakeCard(
-            new Point(28, 100), "🖥", "Share this PC", "Host",
+            new Point(36, 110), "🖥", "Share this PC", "Host",
             "Let someone see and control this machine. Shows a session ID and " +
             "password to hand to the other side.",
             LauncherChoice.Host));
 
         Controls.Add(MakeCard(
-            new Point(354, 100), "🎯", "Control another PC", "Viewer",
+            new Point(466, 110), "🎯", "Control another PC", "Viewer",
             "Connect to a shared machine — enter its session ID and password, " +
             "or pick a saved target from the address book.",
             LauncherChoice.Viewer));
-
-        var hint = new Label
-        {
-            Text = "Tip: shortcuts can skip this screen with --host or --viewer",
-            ForeColor = Theme.TextMuted,
-            AutoSize = true,
-            MaximumSize = new Size(430, 0),
-            Location = new Point(30, 390),
-        };
-        Controls.Add(hint);
 
         var version = new Label
         {
             Text = $"v{UpdateService.CurrentVersion.ToString(3)}",
             ForeColor = Theme.TextMuted,
             AutoSize = true,
-            Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         Controls.Add(version);
-        version.Location = new Point(ClientSize.Width - version.Width - 28, 24);
+        version.Location = new Point(ClientSize.Width - version.Width - 36, 28);
 
         var check = new LinkLabel
         {
             Text = "Check for updates",
             AutoSize = true,
-            Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
             LinkColor = Theme.Accent,
             ActiveLinkColor = Theme.AccentHover,
         };
         check.LinkClicked += (_, _) => _ = CheckForUpdatesAsync(interactive: true);
         Controls.Add(check);
-        check.Location = new Point(ClientSize.Width - check.Width - 28, 390);
+        check.Location = new Point(ClientSize.Width - check.Width - 36, 480);
+
+        var hint = new Label
+        {
+            Text = "Tip: shortcuts can skip this screen with --host or --viewer",
+            ForeColor = Theme.TextMuted,
+            AutoSize = true,
+            Location = new Point(38, 516),
+        };
+        Controls.Add(hint);
 
         Shown += (_, _) => _ = CheckForUpdatesAsync(interactive: false);
     }
@@ -145,7 +141,7 @@ internal sealed class LauncherForm : Form
     private Panel MakeCard(Point location, string glyph, string heading, string tag,
         string description, LauncherChoice choice)
     {
-        var card = new Panel { Location = location, Size = new Size(298, 260), Cursor = Cursors.Hand };
+        var card = new Panel { Location = location, Size = new Size(398, 340), Cursor = Cursors.Hand };
         Theme.StyleCard(card);
 
         // Fixed icon box: Segoe UI Emoji + AutoSize reports a huge height and the
@@ -153,11 +149,11 @@ internal sealed class LauncherForm : Form
         var icon = new Label
         {
             Text = glyph,
-            Font = new Font("Segoe UI Emoji", 28f),
+            Font = new Font("Segoe UI Emoji", 32f),
             AutoSize = false,
-            Size = new Size(52, 52),
+            Size = new Size(56, 56),
             TextAlign = ContentAlignment.MiddleLeft,
-            Location = new Point(18, 16),
+            Location = new Point(24, 24),
             BackColor = Color.Transparent,
         };
         var head = new Label
@@ -165,7 +161,7 @@ internal sealed class LauncherForm : Form
             Text = heading,
             Font = Theme.HeadingFont,
             AutoSize = true,
-            Location = new Point(20, 78),
+            Location = new Point(26, 96),
             BackColor = Color.Transparent,
         };
         var role = new Label
@@ -174,15 +170,15 @@ internal sealed class LauncherForm : Form
             ForeColor = Theme.Accent,
             Font = new Font("Segoe UI Semibold", 8.5f),
             AutoSize = true,
-            Location = new Point(21, 104),
+            Location = new Point(27, 126),
             BackColor = Color.Transparent,
         };
         var desc = new Label
         {
             Text = description,
             ForeColor = Theme.TextMuted,
-            Location = new Point(20, 130),
-            Size = new Size(258, 110),
+            Location = new Point(26, 160),
+            Size = new Size(346, 150),
             BackColor = Color.Transparent,
         };
 
