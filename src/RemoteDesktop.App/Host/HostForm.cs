@@ -47,7 +47,8 @@ public sealed class HostForm : Form
     {
         _autoStart = autoStart;
         Text = "RemoteDesktop — Host";
-        ClientSize = new Size(520, 484);
+        AutoScaleMode = AutoScaleMode.None;
+        ClientSize = new Size(720, 580);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
@@ -108,11 +109,11 @@ public sealed class HostForm : Form
 
         var passwordCaption = new Label
         {
-            Text = "Password", ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(280, 102),
+            Text = "Password", ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(380, 102),
         };
         _passwordLabel.Font = Theme.MonoBig;
         _passwordLabel.AutoSize = true;
-        _passwordLabel.Location = new Point(278, 122);
+        _passwordLabel.Location = new Point(378, 122);
 
         accessCard.Controls.Add(sessionCaption);
         accessCard.Controls.Add(_sessionIdLabel);
@@ -121,27 +122,27 @@ public sealed class HostForm : Form
 
         // ---- buttons ----
         _startButton.Text = "Start session";
-        _startButton.Size = new Size(130, 36);
-        _startButton.Location = new Point(20, y);
+        _startButton.Size = new Size(150, 40);
+        _startButton.Location = new Point(24, y);
         Theme.StylePrimary(_startButton);
         _startButton.Click += (_, _) => Start();
 
         _stopButton.Text = "Stop";
-        _stopButton.Size = new Size(80, 36);
-        _stopButton.Location = new Point(158, y);
+        _stopButton.Size = new Size(90, 40);
+        _stopButton.Location = new Point(186, y);
         Theme.StyleSecondary(_stopButton);
         _stopButton.Enabled = false;
         _stopButton.Click += (_, _) => Stop();
 
         _newButton.Text = "New credentials";
-        _newButton.Size = new Size(140, 36);
-        _newButton.Location = new Point(246, y);
+        _newButton.Size = new Size(160, 40);
+        _newButton.Location = new Point(288, y);
         Theme.StyleSecondary(_newButton);
         _newButton.Click += (_, _) => { Regenerate(); ApplyMode(); };
 
         _sendFileButton.Text = "Send file…";
-        _sendFileButton.Size = new Size(106, 36);
-        _sendFileButton.Location = new Point(394, y);
+        _sendFileButton.Size = new Size(120, 40);
+        _sendFileButton.Location = new Point(460, y);
         Theme.StyleSecondary(_sendFileButton);
         _sendFileButton.Enabled = false;
         _sendFileButton.Click += (_, _) => SendFile();
@@ -150,20 +151,20 @@ public sealed class HostForm : Form
         Controls.Add(_stopButton);
         Controls.Add(_newButton);
         Controls.Add(_sendFileButton);
-        y += 52;
+        y += 56;
 
         _autostartCheck.Text = "Start with Windows and begin serving automatically (in the tray)";
         _autostartCheck.AutoSize = true;
         _autostartCheck.ForeColor = Theme.TextMuted;
-        _autostartCheck.Location = new Point(22, y);
+        _autostartCheck.Location = new Point(24, y);
         _autostartCheck.Checked = IsAutostartEnabled();
         _autostartCheck.CheckedChanged += (_, _) => SetAutostart(_autostartCheck.Checked);
         Controls.Add(_autostartCheck);
-        y += 32;
+        y += 36;
 
         _statusLabel.AutoSize = true;
         _statusLabel.ForeColor = Theme.TextMuted;
-        _statusLabel.Location = new Point(22, y);
+        _statusLabel.Location = new Point(24, y);
         _statusLabel.Text = "Idle.";
         Controls.Add(_statusLabel);
 
@@ -414,7 +415,7 @@ public sealed class HostForm : Form
 
     private Panel MakeCard(string heading, ref int y, int height)
     {
-        var card = new Panel { Location = new Point(20, y), Size = new Size(480, height) };
+        var card = new Panel { Location = new Point(24, y), Size = new Size(672, height) };
         Theme.StyleCard(card);
         card.Controls.Add(new Label
         {
@@ -422,10 +423,10 @@ public sealed class HostForm : Form
             Font = new Font("Segoe UI Semibold", 8.5f),
             ForeColor = Theme.TextMuted,
             AutoSize = true,
-            Location = new Point(16, 12),
+            Location = new Point(20, 14),
         });
         Controls.Add(card);
-        y += height + 14;
+        y += height + 16;
         return card;
     }
 
@@ -433,10 +434,10 @@ public sealed class HostForm : Form
     {
         card.Controls.Add(new Label
         {
-            Text = caption, ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(16, y + 4),
+            Text = caption, ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(20, y + 4),
         });
-        field.Location = new Point(150, y);
-        field.Width = card.Width - 150 - 16;
+        field.Location = new Point(170, y);
+        field.Width = card.Width - 170 - 20;
         card.Controls.Add(field);
     }
 

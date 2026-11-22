@@ -17,15 +17,15 @@ public sealed class EntryEditForm : Form
     {
         _isNew = existing is null;
         Text = _isNew ? "Add target" : "Edit target";
-        Width = 420;
-        Height = 260;
+        AutoScaleMode = AutoScaleMode.None;
+        ClientSize = new Size(520, 300);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterParent;
         MinimizeBox = MaximizeBox = false;
         Theme.Apply(this);
 
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Padding = new Padding(10) };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Padding = new Padding(12) };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         foreach (var box in new[] { _name, _relay, _session, _password })
         {

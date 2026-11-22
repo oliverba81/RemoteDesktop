@@ -18,8 +18,8 @@ public sealed class ConnectForm : Form
     public ConnectForm()
     {
         Text = "RemoteDesktop — Connect";
-        Width = 580;
-        Height = 500;
+        AutoScaleMode = AutoScaleMode.None;
+        ClientSize = new Size(780, 580);
         StartPosition = FormStartPosition.CenterScreen;
         Theme.Apply(this);
 
@@ -27,13 +27,19 @@ public sealed class ConnectForm : Form
         _list.FullRowSelect = true;
         _list.Dock = DockStyle.Fill;
         Theme.StyleListView(_list);
-        _list.Columns.Add("", 28);
-        _list.Columns.Add("Name", 160);
-        _list.Columns.Add("Relay", 200);
-        _list.Columns.Add("Session", 120);
+        _list.Columns.Add("", 32);
+        _list.Columns.Add("Name", 220);
+        _list.Columns.Add("Relay", 280);
+        _list.Columns.Add("Session", 160);
         _list.DoubleClick += (_, _) => ConnectSelected();
 
-        var listButtons = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true };
+        var listButtons = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Bottom,
+            AutoSize = true,
+            Padding = new Padding(8, 6, 8, 6),
+            WrapContents = true,
+        };
         AddButton(listButtons, "Connect", ConnectSelected);
         AddButton(listButtons, "Add…", () => EditEntry(null));
         AddButton(listButtons, "Edit…", () => { if (Selected() is { } e) EditEntry(e); });
@@ -45,12 +51,12 @@ public sealed class ConnectForm : Form
         {
             Text = "Quick connect",
             Dock = DockStyle.Bottom,
-            Height = 158,
+            Height = 200,
             ForeColor = Theme.TextMuted,
             FlatStyle = FlatStyle.Flat,
         };
-        var q = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Padding = new Padding(8) };
-        q.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
+        var q = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Padding = new Padding(12) };
+        q.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
         q.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         _relayBox.Dock = DockStyle.Fill;
         _relayBox.PlaceholderText = "name.synology.me (port optional, default 9945)";
