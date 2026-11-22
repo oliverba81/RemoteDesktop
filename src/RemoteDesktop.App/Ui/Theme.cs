@@ -103,7 +103,11 @@ internal static class Theme
         }
     }
 
-    /// <summary>A card-like panel: white surface with a subtle rounded border.</summary>
+    /// <summary>
+    /// A card-like panel: white surface with a painted rounded border.
+    /// No window Region — Regions clip child controls and cut off labels/checkboxes
+    /// when fonts grow under display scaling.
+    /// </summary>
     public static void StyleCard(Panel p)
     {
         p.BackColor = Surface;
@@ -115,7 +119,6 @@ internal static class Theme
             using var path = RoundedRect(r, 8);
             e.Graphics.DrawPath(pen, path);
         };
-        Round(p, 8);
     }
 
     /// <summary>Rounds a control's corners via its window region.</summary>

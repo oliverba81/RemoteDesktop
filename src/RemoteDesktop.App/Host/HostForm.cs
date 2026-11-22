@@ -47,8 +47,12 @@ public sealed class HostForm : Form
     {
         _autoStart = autoStart;
         Text = "RemoteDesktop — Host";
-        AutoScaleMode = AutoScaleMode.None;
-        ClientSize = new Size(720, 580);
+        // Font autoscaling + stacked fields: side-by-side absolute rows overlap when
+        // display scaling enlarges fonts without growing the reserved label gutter.
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Font;
+        ClientSize = new Size(860, 680);
+        MinimumSize = new Size(820, 640);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
@@ -62,18 +66,29 @@ public sealed class HostForm : Form
             ShowInTaskbar = false;
         }
 
-        int y = 20;
+        var root = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 5,
+            Padding = new Padding(24),
+        };
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // connection
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // access
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // buttons
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // autostart
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // status
 
         // ---- connection card ----
-        var connCard = MakeCard("Connection", ref y, 128);
-        AddRow(connCard, 40, "Relay address", _relayBox);
+        var connCard = MakeCard("Connection");
         Theme.StyleTextBox(_relayBox);
         _relayBox.PlaceholderText = "name.synology.me (port optional, default 9945)";
         _relayBox.Text = string.IsNullOrEmpty(_settings.RelayHost)
             ? ""
             : $"{_settings.RelayHost}:{_settings.RelayPort}";
+        AddStackedField(connCard, "Relay address", _relayBox);
 
-        AddRow(connCard, 80, "Monitor", _monitorBox);
         Theme.StyleComboBox(_monitorBox);
         _monitorBox.DropDownStyle = ComboBoxStyle.DropDownList;
         Screen[] screens = Screen.AllScreens;
@@ -83,90 +98,106 @@ public sealed class HostForm : Form
             _monitorBox.Items.Add($"Display {i + 1} — {b.Width}×{b.Height}{(screens[i].Primary ? " (primary)" : "")}");
         }
         _monitorBox.SelectedIndex = Math.Clamp(_settings.MonitorIndex, 0, screens.Length - 1);
+        AddStackedField(connCard, "Monitor", _monitorBox);
+        root.Controls.Add(connCard, 0, 0);
 
         // ---- access card ----
-        var accessCard = MakeCard("Access", ref y, 172);
-
+        var accessCard = MakeCard("Access");
         _unattendedCheck.Text = "Unattended access (fixed ID + device password)";
         _unattendedCheck.AutoSize = true;
-        _unattendedCheck.Location = new Point(16, 38);
+        _unattendedCheck.Margin = new Padding(0, 4, 0, 10);
         _unattendedCheck.Checked = _settings.UnattendedEnabled;
         _unattendedCheck.CheckedChanged += (_, _) => ApplyMode();
         accessCard.Controls.Add(_unattendedCheck);
 
-        AddRow(accessCard, 66, "Device password", _devicePasswordBox);
         Theme.StyleTextBox(_devicePasswordBox);
         _devicePasswordBox.UseSystemPasswordChar = true;
+        AddStackedField(accessCard, "Device password", _devicePasswordBox);
 
-        var sessionCaption = new Label
+        var creds = new TableLayoutPanel
         {
-            Text = "Session ID", ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(16, 102),
+            ColumnCount = 2,
+            RowCount = 2,
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            Margin = new Padding(0, 8, 0, 0),
         };
+        creds.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        creds.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        creds.Controls.Add(new Label
+        {
+            Text = "Session ID", ForeColor = Theme.TextMuted, AutoSize = true, Margin = new Padding(0, 0, 0, 4),
+        }, 0, 0);
+        creds.Controls.Add(new Label
+        {
+            Text = "Password", ForeColor = Theme.TextMuted, AutoSize = true, Margin = new Padding(12, 0, 0, 4),
+        }, 1, 0);
         _sessionIdLabel.Font = Theme.MonoBig;
         _sessionIdLabel.ForeColor = Theme.Accent;
         _sessionIdLabel.AutoSize = true;
-        _sessionIdLabel.Location = new Point(14, 122);
-
-        var passwordCaption = new Label
-        {
-            Text = "Password", ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(380, 102),
-        };
         _passwordLabel.Font = Theme.MonoBig;
         _passwordLabel.AutoSize = true;
-        _passwordLabel.Location = new Point(378, 122);
-
-        accessCard.Controls.Add(sessionCaption);
-        accessCard.Controls.Add(_sessionIdLabel);
-        accessCard.Controls.Add(passwordCaption);
-        accessCard.Controls.Add(_passwordLabel);
+        _passwordLabel.Margin = new Padding(12, 0, 0, 0);
+        creds.Controls.Add(_sessionIdLabel, 0, 1);
+        creds.Controls.Add(_passwordLabel, 1, 1);
+        accessCard.Controls.Add(creds);
+        root.Controls.Add(accessCard, 0, 1);
 
         // ---- buttons ----
+        var buttons = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = true,
+            Padding = new Padding(0, 8, 0, 8),
+        };
         _startButton.Text = "Start session";
-        _startButton.Size = new Size(150, 40);
-        _startButton.Location = new Point(24, y);
+        _startButton.AutoSize = true;
+        _startButton.MinimumSize = new Size(140, 44);
+        _startButton.Padding = new Padding(12, 6, 12, 6);
         Theme.StylePrimary(_startButton);
         _startButton.Click += (_, _) => Start();
 
         _stopButton.Text = "Stop";
-        _stopButton.Size = new Size(90, 40);
-        _stopButton.Location = new Point(186, y);
+        _stopButton.AutoSize = true;
+        _stopButton.MinimumSize = new Size(90, 44);
+        _stopButton.Padding = new Padding(12, 6, 12, 6);
         Theme.StyleSecondary(_stopButton);
         _stopButton.Enabled = false;
         _stopButton.Click += (_, _) => Stop();
 
         _newButton.Text = "New credentials";
-        _newButton.Size = new Size(160, 40);
-        _newButton.Location = new Point(288, y);
+        _newButton.AutoSize = true;
+        _newButton.MinimumSize = new Size(150, 44);
+        _newButton.Padding = new Padding(12, 6, 12, 6);
         Theme.StyleSecondary(_newButton);
         _newButton.Click += (_, _) => { Regenerate(); ApplyMode(); };
 
         _sendFileButton.Text = "Send file…";
-        _sendFileButton.Size = new Size(120, 40);
-        _sendFileButton.Location = new Point(460, y);
+        _sendFileButton.AutoSize = true;
+        _sendFileButton.MinimumSize = new Size(120, 44);
+        _sendFileButton.Padding = new Padding(12, 6, 12, 6);
         Theme.StyleSecondary(_sendFileButton);
         _sendFileButton.Enabled = false;
         _sendFileButton.Click += (_, _) => SendFile();
 
-        Controls.Add(_startButton);
-        Controls.Add(_stopButton);
-        Controls.Add(_newButton);
-        Controls.Add(_sendFileButton);
-        y += 56;
+        buttons.Controls.AddRange(new Control[] { _startButton, _stopButton, _newButton, _sendFileButton });
+        root.Controls.Add(buttons, 0, 2);
 
         _autostartCheck.Text = "Start with Windows and begin serving automatically (in the tray)";
         _autostartCheck.AutoSize = true;
         _autostartCheck.ForeColor = Theme.TextMuted;
-        _autostartCheck.Location = new Point(24, y);
         _autostartCheck.Checked = IsAutostartEnabled();
         _autostartCheck.CheckedChanged += (_, _) => SetAutostart(_autostartCheck.Checked);
-        Controls.Add(_autostartCheck);
-        y += 36;
+        root.Controls.Add(_autostartCheck, 0, 3);
 
         _statusLabel.AutoSize = true;
         _statusLabel.ForeColor = Theme.TextMuted;
-        _statusLabel.Location = new Point(24, y);
         _statusLabel.Text = "Idle.";
-        Controls.Add(_statusLabel);
+        _statusLabel.Margin = new Padding(0, 8, 0, 0);
+        root.Controls.Add(_statusLabel, 0, 4);
+
+        Controls.Add(root);
 
         // ---- tray ----
         _tray.Icon = SystemIcons.Application;
@@ -187,7 +218,14 @@ public sealed class HostForm : Form
         Regenerate();
         ApplyMode();
 
-        Load += (_, _) => AutoStartIfConfigured();
+        Load += (_, _) =>
+        {
+            // Grow width if the autostart line is still clipped after font scaling.
+            int need = Math.Max(_autostartCheck.PreferredSize.Width + 64, ClientSize.Width);
+            if (need > ClientSize.Width)
+                ClientSize = new Size(need, ClientSize.Height);
+            AutoStartIfConfigured();
+        };
         Resize += (_, _) =>
         {
             if (WindowState == FormWindowState.Minimized && _running) HideToTray();
@@ -413,9 +451,17 @@ public sealed class HostForm : Form
 
     // ---- helpers ----
 
-    private Panel MakeCard(string heading, ref int y, int height)
+    private static TableLayoutPanel MakeCard(string heading)
     {
-        var card = new Panel { Location = new Point(24, y), Size = new Size(672, height) };
+        var card = new TableLayoutPanel
+        {
+            ColumnCount = 1,
+            AutoSize = true,
+            Dock = DockStyle.Top,
+            Padding = new Padding(20, 16, 20, 16),
+            Margin = new Padding(0, 0, 0, 14),
+        };
+        card.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         Theme.StyleCard(card);
         card.Controls.Add(new Label
         {
@@ -423,21 +469,23 @@ public sealed class HostForm : Form
             Font = new Font("Segoe UI Semibold", 8.5f),
             ForeColor = Theme.TextMuted,
             AutoSize = true,
-            Location = new Point(20, 14),
+            Margin = new Padding(0, 0, 0, 10),
         });
-        Controls.Add(card);
-        y += height + 16;
         return card;
     }
 
-    private static void AddRow(Panel card, int y, string caption, Control field)
+    private static void AddStackedField(TableLayoutPanel card, string caption, Control field)
     {
         card.Controls.Add(new Label
         {
-            Text = caption, ForeColor = Theme.TextMuted, AutoSize = true, Location = new Point(20, y + 4),
+            Text = caption,
+            ForeColor = Theme.TextMuted,
+            AutoSize = true,
+            Margin = new Padding(0, 0, 0, 4),
         });
-        field.Location = new Point(170, y);
-        field.Width = card.Width - 170 - 20;
+        field.Dock = DockStyle.Fill;
+        field.Margin = new Padding(0, 0, 0, 12);
+        if (field.Height < 28) field.Height = 28;
         card.Controls.Add(field);
     }
 
